@@ -12,7 +12,7 @@ from __future__ import division
 
 import os
 import sys
-import xmlrpc.client as xmlrpclib
+import select
 import logging
 import progressbar
 import signal
@@ -24,6 +24,7 @@ import copy
 import atexit
 
 from bb.ui import uihelper
+from bb.ui.crumbs.multilogtail import MultiLogTail
 
 featureSet = [bb.cooker.CookerFeatures.SEND_SANITYEVENTS]
 
@@ -344,6 +345,25 @@ def print_event_log(event, includelogs, loglines, termfilter):
             if lines:
                 for line in lines:
                     print(line)
+class RtLogLevel:
+    def __init__(self, mlt):
+        self.displaytail = False
+        self.mlt = mlt
+
+    def displayLogs(self):
+        if self.displaytail:
+            self.mlt.displayLogs()
+
+    def setLevel(self, input, verbose):
+        if input == "1":
+            if verbose:
+                print("NOTE: Turning off real time log tail")
+            self.displaytail = False
+        elif input == "2":
+            if verbose:
+                print "NOTE: Turning on real time log tail"
+                print("NOTE: Turning on real time log tail")
+            self.displaytail = True
 
 def _log_settings_from_server(server, observe_only):
     # Get values of variables which control our output
@@ -387,6 +407,13 @@ def main(server, eventHandler, params, tf = TerminalFilter):
     else:
         log_exec_tty = False
 
+    # MultiTail affected varialbles
+    numthreads = server.runCommand(["getVariable", "BB_NUMBER_THREADS"])
+    if numthreads is None or numthreads == "1":
+        mlt = MultiLogTail(False)
+    else:
+        mlt = MultiLogTail(True)
+
     helper = uihelper.BBUIHelper()
 
     console = logging.StreamHandler(sys.stdout)
@@ -401,6 +428,11 @@ def main(server, eventHandler, params, tf = TerminalFilter):
         forcelevel = bb.msg.BBLogFormatter.WARNING
     bb.msg.addDefaultlogFilter(console, bb.msg.BBLogFilterStdOut, forcelevel)
     bb.msg.addDefaultlogFilter(errconsole, bb.msg.BBLogFilterStdErr)
+    bb.msg.addDefaultlogFilter(console)
+    rtloglevel = RtLogLevel(mlt)
+    bb_rt_loglevel = server.runCommand(["getVariable", "BB_RT_LOGLEVEL"])
+    if bb_rt_loglevel and bb_rt_loglevel != "":
+        rtloglevel.setLevel(bb_rt_loglevel, False)
     console.setFormatter(format)
     errconsole.setFormatter(format)
     if not bb.msg.has_console_handler(logger):
@@ -480,9 +512,21 @@ def main(server, eventHandler, params, tf = TerminalFilter):
                 if not parseprogress:
                     termfilter.updateFooter()
                 event = eventHandler.waitEvent(0.25)
+                # Always try printing any accumulated log files first
+                rtloglevel.displayLogs()
                 if event is None:
                     continue
             helper.eventHandler(event)
+            if isinstance(event, bb.build.TaskStarted):
+                mlt.openLog(event.logfile, event.pid)
+                rtloglevel.displayLogs()
+
+            if isinstance(event, bb.build.TaskSucceeded):
+                mlt.closeLogPid(event.pid)
+
+            if isinstance(event, bb.build.TaskFailed):
+                mlt.closeLogPid(event.pid)
+
             if isinstance(event, bb.runqueue.runQueueExitWait):
                 if not main.shutdown:
                     main.shutdown = 1
