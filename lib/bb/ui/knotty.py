@@ -23,6 +23,7 @@ import copy
 import atexit
 
 from bb.ui import uihelper
+from bb.ui.crumbs.multilogtail import MultiLogTail
 
 featureSet = [bb.cooker.CookerFeatures.SEND_SANITYEVENTS]
 
@@ -107,6 +108,24 @@ def pluralise(singular, plural, qty):
     else:
         return plural % qty
 
+class RtLogLevel:
+    def __init__(self, mlt):
+        self.displaytail = False
+        self.mlt = mlt
+
+    def displayLogs(self):
+        if self.displaytail:
+            self.mlt.displayLogs()
+
+    def setLevel(self, input, verbose):
+        if input == "1":
+            if verbose:
+                print("NOTE: Turning off real time log tail")
+            self.displaytail = False
+        elif input == "2":
+            if verbose:
+                print("NOTE: Turning on real time log tail")
+            self.displaytail = True
 
 class InteractConsoleLogFilter(logging.Filter):
     def __init__(self, tf):
@@ -546,6 +565,13 @@ def main(server, eventHandler, params, tf = TerminalFilter):
     else:
         log_exec_tty = False
 
+    # MultiTail affected varialbles
+    numthreads, error = server.runCommand(["getVariable", "BB_NUMBER_THREADS"])
+    if numthreads is None or numthreads == "1":
+        mlt = MultiLogTail(False)
+    else:
+        mlt = MultiLogTail(True)
+
     helper = uihelper.BBUIHelper()
 
     # Look for the specially designated handlers which need to be passed to the
@@ -603,6 +629,11 @@ def main(server, eventHandler, params, tf = TerminalFilter):
     termfilter = tf(main, helper, console_handlers, params.options.quiet)
     atexit.register(termfilter.finish)
 
+    rtloglevel = RtLogLevel(mlt)
+    bb_rt_loglevel, error = server.runCommand(["getVariable", "BB_RT_LOGLEVEL"])
+    if bb_rt_loglevel and bb_rt_loglevel != "":
+        rtloglevel.setLevel(bb_rt_loglevel, False)
+
     while True:
         try:
             if (lastprint + printinterval) <= time.time():
@@ -615,9 +646,22 @@ def main(server, eventHandler, params, tf = TerminalFilter):
                 if not parseprogress:
                     termfilter.updateFooter()
                 event = eventHandler.waitEvent(0.25)
+                # Always try printing any accumulated log files first
+                rtloglevel.displayLogs()
                 if event is None:
                     continue
             helper.eventHandler(event)
+
+            if isinstance(event, bb.build.TaskStarted):
+                mlt.openLog(event.logfile, event.pid)
+                rtloglevel.displayLogs()
+
+            if isinstance(event, bb.build.TaskSucceeded):
+                mlt.closeLogPid(event.pid)
+
+            if isinstance(event, bb.build.TaskFailed):
+                mlt.closeLogPid(event.pid)
+
             if isinstance(event, bb.runqueue.runQueueExitWait):
                 if not main.shutdown:
                     main.shutdown = 1
