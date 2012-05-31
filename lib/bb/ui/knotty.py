@@ -14,6 +14,7 @@ import os
 import sys
 import logging
 import progressbar
+import select
 import signal
 import bb.msg
 import time
@@ -194,7 +195,7 @@ class TerminalFilter(object):
             fd = sys.stdin.fileno()
             self.stdinbackup = termios.tcgetattr(fd)
             new = copy.deepcopy(self.stdinbackup)
-            new[3] = new[3] & ~termios.ECHO
+            new[3] = new[3] & ~termios.ICANON & ~termios.ECHO
             termios.tcsetattr(fd, termios.TCSADRAIN, new)
             curses.setupterm()
             if curses.tigetnum("colors") > 2:
@@ -223,6 +224,15 @@ class TerminalFilter(object):
             h.addFilter(InteractConsoleLogFilter(self))
 
         self.main_progress = None
+
+    def poll(self):
+        if not self.cuu:
+            return False
+        try:
+            ret = select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
+        except:
+            return False
+        return ret
 
     def clearFooter(self):
         if self.footer_present:
@@ -646,6 +656,9 @@ def main(server, eventHandler, params, tf = TerminalFilter):
                 if not parseprogress:
                     termfilter.updateFooter()
                 event = eventHandler.waitEvent(0.25)
+                if termfilter.poll():
+                    keyinput = sys.stdin.read(1)
+                    rtloglevel.setLevel(keyinput, True)
                 # Always try printing any accumulated log files first
                 rtloglevel.displayLogs()
                 if event is None:
