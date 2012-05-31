@@ -379,8 +379,11 @@ class StdinMgr:
             self.termios.tcsetattr(self.fd, self.termios.TCSANOW, new)
 
 class RtLogLevel:
-    def __init__(self, mlt):
+    def __init__(self, handler, logfilter, mlt):
         self.displaytail = False
+        self.handler = handler
+        self.logfilter = logfilter
+        self.defaultLevel = logfilter.getFiltLevel()
         self.mlt = mlt
 
     def displayLogs(self):
@@ -460,8 +463,8 @@ def main(server, eventHandler, params, tf = TerminalFilter):
         forcelevel = bb.msg.BBLogFormatter.WARNING
     bb.msg.addDefaultlogFilter(console, bb.msg.BBLogFilterStdOut, forcelevel)
     bb.msg.addDefaultlogFilter(errconsole, bb.msg.BBLogFilterStdErr)
-    bb.msg.addDefaultlogFilter(console)
-    rtloglevel = RtLogLevel(mlt)
+    logfilter = bb.msg.addDefaultlogFilter(console)
+    rtloglevel = RtLogLevel(console, logfilter, mlt)
     bb_rt_loglevel = server.runCommand(["getVariable", "BB_RT_LOGLEVEL"])
     if bb_rt_loglevel and bb_rt_loglevel != "":
         rtloglevel.setLevel(bb_rt_loglevel, False)
