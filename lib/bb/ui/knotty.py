@@ -343,8 +343,11 @@ class StdinMgr:
             self.termios.tcsetattr(self.fd, self.termios.TCSANOW, new)
 
 class RtLogLevel:
-    def __init__(self, mlt):
+    def __init__(self, handler, logfilter, mlt):
         self.displaytail = False
+        self.handler = handler
+        self.logfilter = logfilter
+        self.defaultLevel = logfilter.getFiltLevel()
         self.mlt = mlt
 
     def displayLogs(self):
@@ -355,10 +358,22 @@ class RtLogLevel:
         if input == "1":
             if verbose:
                 print "NOTE: Turning off real time log tail"
+            self.logfilter.setFiltLevel(self.handler, self.defaultLevel)
             self.displaytail = False
         elif input == "2":
             if verbose:
                 print "NOTE: Turning on real time log tail"
+            self.logfilter.setFiltLevel(self.handler, self.defaultLevel)
+            self.displaytail = True
+        elif input == "3":
+            if verbose:
+                print "NOTE: Turning on DEBUG logging"
+            self.logfilter.setFiltLevel(self.handler, logging.DEBUG)
+            self.displaytail = False
+        elif input == "4":
+            if verbose:
+                print "NOTE: Turning on DEBUG logging + real time log tail"
+            self.logfilter.setFiltLevel(self.handler, logging.DEBUG)
             self.displaytail = True
 
 def _log_settings_from_server(server):
@@ -414,8 +429,8 @@ def main(server, eventHandler, params, tf = TerminalFilter):
     else:
         bb.msg.addDefaultlogFilter(console, bb.msg.BBLogFilterStdOut)
     bb.msg.addDefaultlogFilter(errconsole, bb.msg.BBLogFilterStdErr)
-    bb.msg.addDefaultlogFilter(console)
-    rtloglevel = RtLogLevel(mlt)
+    logfilter = bb.msg.addDefaultlogFilter(console)
+    rtloglevel = RtLogLevel(console, logfilter, mlt)
     bb_rt_loglevel = server.runCommand(["getVariable", "BB_RT_LOGLEVEL"])
     if bb_rt_loglevel and bb_rt_loglevel != "":
         rtloglevel.setLevel(bb_rt_loglevel, False)
