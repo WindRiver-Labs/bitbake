@@ -230,6 +230,10 @@ class TerminalFilter(object):
             print("Bitbake still alive (%ds)" % t)
             sys.stdout.flush()
 
+    def updateFooterForce(self):
+        self.footer_present = False
+        self.updateFooter()
+
     def updateFooter(self):
         if not self.cuu:
             return
@@ -551,6 +555,7 @@ def main(server, eventHandler, params, tf = TerminalFilter):
                 if stdin_mgr.poll():
                     keyinput = sys.stdin.read(1)
                     rtloglevel.setLevel(keyinput, True)
+                    termfilter.updateFooterForce()
                 # Always try printing any accumulated log files first
                 rtloglevel.displayLogs()
                 if event is None:
