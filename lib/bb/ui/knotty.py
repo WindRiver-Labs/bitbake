@@ -356,7 +356,11 @@ class StdinMgr:
     def poll(self):
         if not self.stdinbackup:
             return False
-        return select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
+        try:
+            ret = select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
+        except:
+            return False
+        return ret
 
     def restore(self):
         if self.stdinbackup:
