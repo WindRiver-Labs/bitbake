@@ -126,6 +126,7 @@ class RtLogLevel:
             self.displaytail = False
             self.displayprogress = True
             self.strictfilter = True
+            self.displayloglocations = False
             self.mlt = mlt
 
         def displayLogs(self):
@@ -139,18 +140,21 @@ class RtLogLevel:
                 self.displaytail = False
                 self.displayprogress = True
                 self.strictfilter = True
+                self.displayloglocations = False
             elif input == "1":
                 if verbose:
                     print("NOTE: Using linear logging")
                 self.displaytail = False
                 self.displayprogress = False
                 self.strictfilter = False
+                self.displayloglocations = False
             elif input == "2":
                 if verbose:
                     print("NOTE: Using split (linear + \"top\") logging")
                 self.displaytail = False
                 self.displayprogress = True
                 self.strictfilter = False
+                self.displayloglocations = False
             elif input == "r":
                 if self.displaytail:
                     if verbose:
@@ -160,6 +164,15 @@ class RtLogLevel:
                     if verbose:
                         print("NOTE: Turning on real time log tail")
                     self.displaytail = True
+            elif input == "l":
+                if self.displayloglocations:
+                    if verbose:
+                        print("NOTE: Hiding log locations")
+                    self.displayloglocations = False
+                else:
+                    if verbose:
+                        print("NOTE: Displaying log locations")
+                    self.displayloglocations = True
             elif input == "h" or input == "?":
                 print("")
                 print("=============================================")
@@ -168,6 +181,7 @@ class RtLogLevel:
                 print(" 1 - Linear logging (tuns off all enhanced logging)")
                 print(" 2 - Split (linear + \"top\") logging (turns off all enhanced logging)")
                 print(" r - Toggle use of real time log tail")
+                print(" l - Toggle display of log locations")
                 print(" h - display commands")
                 print("")
 
@@ -718,6 +732,9 @@ def main(server, eventHandler, params, tf = TerminalFilter):
             helper.eventHandler(event)
 
             if isinstance(event, bb.build.TaskStarted):
+                if (RtLogLevel().displayloglocations):
+                    termfilter.clearFooter()
+                    print("NOTE: LOG: %s" % event.logfile)
                 mlt.openLog(event.logfile, event.pid)
                 RtLogLevel().displayLogs()
 
