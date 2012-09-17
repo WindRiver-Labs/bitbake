@@ -401,6 +401,7 @@ class StdinMgr:
 class RtLogLevel:
     def __init__(self, handler, logfilter, mlt, tf):
         self.displaytail = False
+        self.displayLogLocations = False
         self.handler = handler
         self.logfilter = logfilter
         self.defaultLevel = logfilter.getFiltLevel()
@@ -435,6 +436,14 @@ class RtLogLevel:
                 print("NOTE: Turning on task notes")
             if isinstance(self.tf, TerminalFilter):
                 self.tf.setFilterOff()
+        elif input == "l":
+            if verbose:
+                print("NOTE: Activating log locations display")
+            self.displayLogLocations = True
+        elif input == "L":
+            if verbose:
+                print("NOTE: Disable log locations display")
+            self.displayLogLocations = False
         elif input == "h" or input == "?":
             print("=============================================")
             print("Interaction help commands:")
@@ -443,6 +452,7 @@ class RtLogLevel:
             print(" 2 - turn on real time log tail")
             print(" 3 - turn on debug logging")
             print(" 4 - turn on debug logging and real time log tail")
+            print(" l - emit log locations (L to turn off)")
             print(" t - Display tasks in \"top\" mode")
             print(" N - Display all runtime NOTE's that are normally filtered (0 or 1 toggles off)")
             print(" h - display commands")
@@ -607,6 +617,9 @@ def main(server, eventHandler, params, tf = TerminalFilter):
 
             helper.eventHandler(event)
             if isinstance(event, bb.build.TaskStarted):
+                if (rtloglevel.displayLogLocations):
+                    termfilter.clearFooter()
+                    print("NOTE: LOG: %s" % event.logfile)
                 mlt.openLog(event.logfile, event.pid)
                 rtloglevel.displayLogs()
 
