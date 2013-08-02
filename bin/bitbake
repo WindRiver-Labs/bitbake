@@ -24,13 +24,23 @@
 
 import os
 import sys
+import signal
 
+import sys, logging
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)),
                                 'lib'))
 try:
     import bb
 except RuntimeError as exc:
     sys.exit(str(exc))
+
+# start pdb tracing if we receive SIGUSR1.
+def handle_pdb(sig, frame):
+    try:
+        import pdb
+        pdb.Pdb().set_trace(frame)
+    except ImportError:
+        logger.debug(2, 'Unable to import pdb module, interactive debugging of bitbake will not be possible')
 
 from bb import cookerdata
 from bb.main import bitbake_main, BitBakeConfigParameters, BBMainException
@@ -44,6 +54,7 @@ if __name__ == "__main__":
     if __version__ != bb.__version__:
         sys.exit("Bitbake core version and program version mismatch!")
     try:
+        signal.signal(signal.SIGUSR1, handle_pdb)
         sys.exit(bitbake_main(BitBakeConfigParameters(sys.argv),
                               cookerdata.CookerConfiguration()))
     except BBMainException as err:
