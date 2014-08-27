@@ -1435,7 +1435,7 @@ class BBCooker:
             except runqueue.TaskFailure as exc:
                 failures += len(exc.args)
                 retval = False
-            except SystemExit as exc:
+            except (SystemExit, bb.BBHandledException) as exc:
                 self.command.finishAsyncCommand(str(exc))
                 return False
 
@@ -1471,7 +1471,7 @@ class BBCooker:
             except runqueue.TaskFailure as exc:
                 failures += len(exc.args)
                 retval = False
-            except SystemExit as exc:
+            except (SystemExit, bb.BBHandledException) as exc:
                 self.command.finishAsyncCommand(str(exc))
                 return False
 
