@@ -18,7 +18,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from __future__ import division
+
 
 import os
 import sys
@@ -390,7 +390,7 @@ class RtLogLevel:
     def setLevel(self, input, verbose):
         if input == "1" or input == "0":
             if verbose:
-                print "NOTE: Turning off real time log tail"
+                print("NOTE: Turning off real time log tail")
             self.logfilter.setFiltLevel(self.handler, self.defaultLevel)
             self.displaytail = False
             if isinstance(self.tf, TerminalFilter):
@@ -400,49 +400,49 @@ class RtLogLevel:
                     self.tf.setTopMode()
         elif input == "2":
             if verbose:
-                print "NOTE: Turning on real time log tail"
+                print("NOTE: Turning on real time log tail")
             self.logfilter.setFiltLevel(self.handler, self.defaultLevel)
             self.displaytail = True
         elif input == "3":
             if verbose:
-                print "NOTE: Turning on DEBUG logging"
+                print("NOTE: Turning on DEBUG logging")
             self.logfilter.setFiltLevel(self.handler, logging.DEBUG)
             self.displaytail = False
         elif input == "4":
             if verbose:
-                print "NOTE: Turning on DEBUG logging + real time log tail"
+                print("NOTE: Turning on DEBUG logging + real time log tail")
             self.logfilter.setFiltLevel(self.handler, logging.DEBUG)
             self.displaytail = True
         elif input == "t":
             if verbose:
-                print "NOTE: Activing task \"top\" mode"
+                print("NOTE: Activing task \"top\" mode")
             if isinstance(self.tf, TerminalFilter):
                 self.tf.setTopMode()
         elif input == "N":
             if verbose:
-                print "NOTE: Turning on task notes"
+                print("NOTE: Turning on task notes")
             if isinstance(self.tf, TerminalFilter):
                 self.tf.setFilterOff()
         elif input == "l":
             if verbose:
-                print "NOTE: Activating log locations display"
+                print("NOTE: Activating log locations display")
             self.displayLogLocations = True
         elif input == "L":
             if verbose:
-                print "NOTE: Disable log locations display"
+                print("NOTE: Disable log locations display")
             self.displayLogLocations = False
         elif input == "h" or input == "?":
-            print "============================================="
-            print "Interaction help commands:"
-            print " 0 - Linear logging"
-            print " 1 - turn off real time log tail"
-            print " 2 - turn on real time log tail"
-            print " 3 - turn on debug logging"
-            print " 4 - turn on debug logging and real time log tail"
-            print " l - emit log locations (L to turn off)"
-            print " t - Display tasks in \"top\" mode"
-            print " N - Display all runtime NOTE's that are normally filtered (0 or 1 toggles off)"
-            print " h - display commands"
+            print("=============================================")
+            print("Interaction help commands:")
+            print(" 0 - Linear logging")
+            print(" 1 - turn off real time log tail")
+            print(" 2 - turn on real time log tail")
+            print(" 3 - turn on debug logging")
+            print(" 4 - turn on debug logging and real time log tail")
+            print(" l - emit log locations (L to turn off)")
+            print(" t - Display tasks in \"top\" mode")
+            print(" N - Display all runtime NOTE's that are normally filtered (0 or 1 toggles off)")
+            print(" h - display commands")
             return False
         return True
 
@@ -596,7 +596,7 @@ def main(server, eventHandler, params, tf = TerminalFilter):
             if isinstance(event, bb.build.TaskStarted):
                 if (rtloglevel.displayLogLocations):
                     termfilter.clearFooter()
-                    print "NOTE: LOG: %s" % event.logfile
+                    print("NOTE: LOG: %s" % event.logfile)
                 mlt.openLog(event.logfile, event.pid)
                 rtloglevel.displayLogs()
 
@@ -614,7 +614,7 @@ def main(server, eventHandler, params, tf = TerminalFilter):
                 if log_exec_tty:
                     tries = event.retries
                     while tries:
-                        print("Trying to run: %s" % event.prog)
+                        print(("Trying to run: %s" % event.prog))
                         if os.system(event.prog) == 0:
                             break
                         time.sleep(event.sleep_delay)
@@ -670,7 +670,7 @@ def main(server, eventHandler, params, tf = TerminalFilter):
                                 if len(lines) > int(loglines):
                                     lines.pop(0)
                             else:
-                                print('| %s' % l)
+                                print(('| %s' % l))
                         f.close()
                         if lines:
                             for line in lines:
@@ -708,7 +708,7 @@ def main(server, eventHandler, params, tf = TerminalFilter):
             if isinstance(event, bb.event.CacheLoadCompleted):
                 cacheprogress.finish()
                 if not params.options.quiet:
-                    print("Loaded %d entries from dependency cache." % event.num_entries)
+                    print(("Loaded %d entries from dependency cache." % event.num_entries))
                 continue
 
             if isinstance(event, bb.command.CommandFailed):
