@@ -103,9 +103,9 @@ class MultiLogTail(object):
                 if output == None:
                     break
                 if self.printPid:
-                    print " " + str(pid) + ":" + output
+                    print(" " + str(pid) + ":" + output)
                 else:
-                    print output
+                    print(output)
 
     def closeLogs(self):
         while 1:
@@ -132,4 +132,4 @@ class MultiLogTail(object):
         if rm_pid in self.trackPid:
             self.trackPid.remove(rm_pid)
             return
-        print "ERROR: PID %s not in the list" % rm_pid
+        print("ERROR: PID %s not in the list" % rm_pid)
