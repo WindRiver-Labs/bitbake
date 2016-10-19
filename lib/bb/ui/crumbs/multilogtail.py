@@ -53,7 +53,7 @@ class LogTail(object):
             return self.getLeftLine()
         while 1:
             self.offset = self.file.tell()
-            line = self.file.readline()
+            line = self.file.readline().decode("utf-8")
             if line:
                 if self.filterLines:
                     line = line.replace('\r\n','\r');
