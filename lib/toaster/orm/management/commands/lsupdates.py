@@ -23,6 +23,9 @@ from django.core.management.base import NoArgsCommand
 
 from orm.models import LayerSource, Layer, Release, Layer_Version
 from orm.models import LayerVersionDependency, Machine, Recipe
+### WIND_RIVER_EXTENSION_BEGIN ###
+from orm.models import WRTemplate, WRDistro
+### WIND_RIVER_EXTENSION_END ###
 
 import os
 import sys
@@ -34,6 +37,9 @@ import time
 logger = logging.getLogger("toaster")
 
 DEFAULT_LAYERINDEX_SERVER = "http://layers.openembedded.org/layerindex/api/"
+### WIND_RIVER_EXTENSION_BEGIN ###
+DEFAULT_LAYERINDEX_SERVER = "http://layers.wrs.com/layerindex/api/"
+### WIND_RIVER_EXTENSION_END ###
 
 
 class Spinner(threading.Thread):
@@ -271,6 +277,48 @@ class Command(NoArgsCommand):
                 LayerVersionDependency.objects.get_or_create(layer_version=lv,
                                                              depends_on=lvd)
             self.mini_progress("Layer version dependencies", i, total)
+
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        # update Wind River Templates
+        logger.info("Fetching Wind River template information")
+#        templates_info = _get_json_response(
+#            apilinks['wrtemplates'] + "?filter=layerbranch__branch__name:%s" %
+#            "OR".join(whitelist_branch_names))
+        templates_info = _get_json_response(
+            apilinks['wrtemplates'])
+
+        total = len(templates_info)
+        for i, ti in enumerate(templates_info):
+            to, created = WRTemplate.objects.get_or_create(
+                name=ti['name'],
+                layer_version=Layer_Version.objects.get(
+                    pk=li_layer_branch_id_to_toaster_lv_id[ti['layerbranch']]))
+            to.up_date = ti['updated']
+            to.name = ti['name']
+            to.description = ti['description']
+            to.save()
+            self.mini_progress("wrtemplates", i, total)
+
+        # update Distros
+        logger.info("Fetching distro information")
+#        templates_info = _get_json_response(
+#            apilinks['wrtemplates'] + "?filter=layerbranch__branch__name:%s" %
+#            "OR".join(whitelist_branch_names))
+        distros_info = _get_json_response(
+            apilinks['distros'])
+
+        total = len(distros_info)
+        for i, di in enumerate(distros_info):
+            distro, created = WRDistro.objects.get_or_create(
+                name=di['name'],
+                layer_version=Layer_Version.objects.get(
+                    pk=li_layer_branch_id_to_toaster_lv_id[di['layerbranch']]))
+            distro.up_date = di['updated']
+            distro.name = di['name']
+            distro.description = di['description']
+            distro.save()
+            self.mini_progress("wrdistros", i, total)
+        ### WIND_RIVER_EXTENSION_END ###
 
         # update machines
         logger.info("Fetching machine information")
