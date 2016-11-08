@@ -76,6 +76,24 @@
       </form>
     </div>
 
+    <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+    <div class="well well-transparent" id="distro-section">
+      <h3>Distro</h3>
+
+      <p class="lead"><span id="project-distro-name"></span> <span class="glyphicon glyphicon-edit" id="change-distro-toggle"></span></p>
+
+      <form id="select-distro-form" style="display:none;" class="form-inline">
+        <span class="help-block">Distro suggestions come from the Layer Index</a></span>
+        <div class="form-group">
+          <input class="form-control" id="distro-change-input" autocomplete="off" value="" data-provide="typeahead" data-minlength="1" data-autocomplete="off" type="text">
+        </div>
+        <button id="distro-change-btn" class="btn btn-default" type="button">Save</button>
+        <a href="#" id="cancel-distro-change" class="btn btn-link">Cancel</a>
+        <p class="form-link"><a href="{% url 'projectwrdistros' project.id %}">View compatible distros</a></p>
+      </form>
+    </div>
+    <!-- ### WIND_RIVER_EXTENSION_END ### -->
+
     <div class="well well-transparent">
       <h3>Most built recipes</h3>
 
@@ -139,6 +157,34 @@
 
       <ul class="list-unstyled lead" id="layers-in-project-list">
       </ul>
+    </div>
+
+
+    <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+    <!-- Wind River Templates --> 
+    <div class="well well-transparent" id="wrtemplate-container">
+      <h3>Wind River Templates <span class="counter">(<span id="project-wrtemplates-count"></span>)</span>
+        <span title="Wind River organises advanced feature combinations into thematic groups called <strong>Wind River Templates</strong>." class="glyphicon glyphicon-question-sign get-help"></span>
+      </h3>
+
+      <div class="alert alert-warning" id="no-wrtemplates-in-project" style="display:none">
+        <h4>This project has no available templates in the project</h4>
+      </div>
+
+      <form class="form-inline">
+        <div class="form-group">
+          <input id="wrtemplate-add-input" class="form-control" autocomplete="off" placeholder="Type a template name" data-minlength="1" data-autocomplete="off" data-provide="typeahead" data-source="" type="text">
+        </div>
+        <button id="add-wrtemplate-btn" class="btn btn-default" disabled>Add Template</button>
+        <p class="form-link">
+          <a href="{% url 'projectwrtemplates' project.id %}" id="view-compatible-wrtemplates">View compatible Wind River templates</a>
+        </p>
+      </form>
+
+      <ul class="list-unstyled lead" id="wrtemplates-in-project-list">
+      </ul>
+    </div>
+    <!-- ### WIND_RIVER_EXTENSION_END ### -->
+
   </div>
-</div>
 {% endblock %}

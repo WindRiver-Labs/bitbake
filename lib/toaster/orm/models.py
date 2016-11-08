@@ -317,6 +317,49 @@ class Project(models.Model):
 
         return queryset
 
+    ### WIND_RIVER_EXTENSION_BEGIN ###
+    def get_available_distros(self):
+        """ Returns QuerySet of all Distros which are provided by the
+        Layers currently added to the Project """
+        queryset = WRDistro.objects.filter(
+            layer_version__in=self.get_project_layer_versions())
+
+        return queryset
+
+    def get_all_compatible_wrtemplates(self):
+        """ Returns QuerySet of all the compatible Wind River templates available to the
+        project including ones from Layers not currently added """
+#        queryset = WRTemplate.objects.filter(
+#            layer_version__in=self.get_all_compatible_layer_versions())
+        queryset = WRTemplate.objects.all()
+        return queryset
+
+    def get_available_wrtemplates(self):
+        """ Returns QuerySet of all the compatible Wind River templates available to the
+        project from the currently layer set """
+        queryset = WRTemplate.objects.filter(
+            layer_version__in=self.get_project_layer_versions())
+        return queryset
+
+    def get_project_wrtemplates(self, pk=False):
+        """ Returns the WRTemplate's currently added to this project """
+        wrtemplates = self.projecttemplate_set.all().values_list('wrtemplate',
+                                                                 flat=True)
+
+        if pk is False:
+            return ProjectTemplate.objects.filter(pk__in=wrtemplates)
+        else:
+            return wrtemplates
+    ### WIND_RIVER_EXTENSION_END ###
+
+    def get_all_compatible_wrdistros(self):
+        """ Returns QuerySet of all the compatible Wind River distros available to the
+        project including ones from Layers not currently added """
+        queryset = WRDistro.objects.filter(
+            layer_version__in=self.get_all_compatible_layer_versions())
+
+        return queryset
+
     def get_available_recipes(self):
         """ Returns QuerySet of all the recipes that are provided by layers
         added to this project """
@@ -1478,17 +1521,21 @@ class Layer_Version(models.Model):
 
     def get_alldeps(self, project_id):
         """Get full list of unique layer dependencies."""
-        def gen_layerdeps(lver, project):
+        def gen_layerdeps(lver, project, depth):
+            if depth==0:
+                return
             for ldep in lver.dependencies.all():
                 yield ldep.depends_on
                 # get next level of deps recursively calling gen_layerdeps
-                for subdep in gen_layerdeps(ldep.depends_on, project):
+                for subdep in gen_layerdeps(ldep.depends_on, project,depth-1):
                     yield subdep
 
         project = Project.objects.get(pk=project_id)
         result = []
         projectlvers = [player.layercommit for player in project.projectlayer_set.all()]
-        for dep in gen_layerdeps(self, project):
+        # protect against infinite layer dependency loops
+        maxdepth=20
+        for dep in gen_layerdeps(self, project, maxdepth):
             # filter out duplicates and layers already belonging to the project
             if dep not in result + projectlvers:
                 result.append(dep)
@@ -1743,6 +1790,46 @@ def signal_runbuilds():
     """Send SIGUSR1 to runbuilds process"""
     with open(os.path.join(os.getenv('BUILDDIR'), '.runbuilds.pid')) as pidf:
         os.kill(int(pidf.read()), SIGUSR1)
+
+### WIND_RIVER_EXTENSION_BEGIN ###
+class WRTemplate(models.Model):
+    search_allowed_fields = ["name", "description", "layer_version__layer__name"]
+    up_date = models.DateTimeField(null = True, default = None)
+
+    layer_version = models.ForeignKey('Layer_Version')
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
+
+    def get_vcs_wrtemplate_file_link_url(self):
+        path = self.name+'/template.conf'
+        return self.layer_version.get_vcs_file_link_url(path)
+
+    def __unicode__(self):
+        return "WRTemplate " + self.name + "(" + self.description + ")"
+
+class ProjectTemplate(models.Model):
+    project = models.ForeignKey(Project)
+    wrtemplate = models.ForeignKey(WRTemplate, null=True)
+
+    def __unicode__(self):
+        return "%s, %s" % (self.project.name, self.template)
+
+class WRDistro(models.Model):
+    search_allowed_fields = ["name", "description", "layer_version__layer__name"]
+    up_date = models.DateTimeField(null = True, default = None)
+
+    layer_version = models.ForeignKey('Layer_Version')
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
+
+    def get_vcs_wrdistro_file_link_url(self):
+        path = self.name+'.conf'
+        return self.layer_version.get_vcs_file_link_url(path)
+
+    def __unicode__(self):
+        return "WRDistro " + self.name + "(" + self.description + ")"
+### WIND_RIVER_EXTENSION_END ###
+
 
 django.db.models.signals.post_save.connect(invalidate_cache)
 django.db.models.signals.post_delete.connect(invalidate_cache)

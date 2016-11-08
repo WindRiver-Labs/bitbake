@@ -156,6 +156,14 @@ urlpatterns = patterns('toastergui.views',
               'title' : 'All machines in layer' },
             name=tables.LayerMachinesTable.__name__.lower()),
 
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        url(r'^project/(?P<pid>\d+)/wrtemplates/$',
+            tables.WRTemplatesTable.as_view(template_name="generic-toastertable-page.html"),
+            name="projectwrtemplates"),
+        url(r'^project/(?P<pid>\d+)/wrdistros/$',
+            tables.WRDistrosTable.as_view(template_name="generic-toastertable-page.html"),
+            name="projectwrdistros"),
+        ### WIND_RIVER_EXTENSION_END ###
 
         url(r'^project/(?P<pid>\d+)/customrecipe/(?P<custrecipeid>\d+)/selectpackages/$',
             tables.SelectPackagesTable.as_view(), name="recipeselectpackages"),
@@ -183,7 +191,12 @@ urlpatterns = patterns('toastergui.views',
         url(r'^xhr_typeahead/projects$',
             typeaheads.ProjectsTypeAhead.as_view(), name='xhr_projectstypeahead'),
 
-
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        url(r'^xhr_typeahead/(?P<pid>\d+)/distros$',
+            typeaheads.DistrosTypeAhead.as_view(), name='xhr_distrostypeahead'),
+        url(r'^xhr_typeahead/(?P<pid>\d+)/wrtemplates$',
+            typeaheads.WRTemplatesTypeAhead.as_view(), name='xhr_wrtemplatestypeahead'),
+        ### WIND_RIVER_EXTENSION_END ###
 
         url(r'^xhr_testreleasechange/(?P<pid>\d+)$', 'xhr_testreleasechange',
             name='xhr_testreleasechange'),
