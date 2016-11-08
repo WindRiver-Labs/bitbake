@@ -32,6 +32,10 @@ $(document).ready(function(){
       <li><a href="{% url 'projectsoftwarerecipes' project.id %}">Software recipes</a></li>
       <li><a href="{% url 'projectmachines' project.id %}">Machines</a></li>
       <li><a href="{% url 'projectlayers' project.id %}">Layers</a></li>
+      <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+      <li><a href="{% url 'projectwrdistros' project.id %}">Distros</a></li>
+      <li><a href="{% url 'projectwrtemplates' project.id %}">Wind River Templates</a></li>
+      <!-- ### WIND_RIVER_EXTENSION_END ### -->
       <li class="nav-header">Extra configuration</li>
       <li><a href="{% url 'projectconf' project.id %}">BitBake variables</a></li>
 

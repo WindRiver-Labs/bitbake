@@ -23,6 +23,9 @@ from toastergui.widgets import ToasterTable
 from orm.models import Recipe, ProjectLayer, Layer_Version, Machine, Project
 from orm.models import CustomImageRecipe, Package, Target, Build, LogMessage, Task
 from orm.models import CustomImagePackage, Package_DependencyManager
+### WIND_RIVER_EXTENSION_BEGIN ###
+from orm.models import WRTemplate, WRDistro
+### WIND_RIVER_EXTENSION_END ###
 from django.db.models import Q, Max, Sum, Count, When, Case, Value, IntegerField
 from django.conf.urls import url
 from django.core.urlresolvers import reverse, resolve
@@ -1536,3 +1539,189 @@ class ProjectBuildsTable(BuildsTable):
             context['build_in_progress_none_completed'] = False
 
         return context
+
+### WIND_RIVER_EXTENSION_BEGIN ###
+class WRTemplatesTable(ToasterTable):
+    """Table of WRTemplates in Toaster"""
+
+    def __init__(self, *args, **kwargs):
+        super(WRTemplatesTable, self).__init__(*args, **kwargs)
+        self.empty_state = "Toaster has no Wind River template information for this project. Sadly, 			   machine information cannot be obtained from builds, so this 				  page will remain empty."
+        self.title = "Compatible Wind River Templates"
+        self.default_orderby = "name"
+        #self.default_orderby = "layer_version__layer__name"
+
+    def get_context_data(self, **kwargs):
+        context = super(WRTemplatesTable, self).get_context_data(**kwargs)
+        context['project'] = Project.objects.get(pk=kwargs['pid'])
+        return context
+
+    def setup_filters(self, *args, **kwargs):
+        project = Project.objects.get(pk=kwargs['pid'])
+
+        in_current_project_filter = TableFilter(
+            "in_current_project",
+            "Filter by project Wind River Templates"
+        )
+
+        in_project_action = TableFilterActionToggle(
+            "in_project",
+            "Wind River Templates provided by layers added to this project",
+            ProjectFilters.in_project(self.project_layers)
+        )
+
+        not_in_project_action = TableFilterActionToggle(
+            "not_in_project",
+            "Wind River Templates provided by layers not added to this project",
+            ProjectFilters.not_in_project(self.project_layers)
+        )
+
+        in_current_project_filter.add_action(in_project_action)
+        in_current_project_filter.add_action(not_in_project_action)
+        self.add_filter(in_current_project_filter)
+
+    def setup_queryset(self, *args, **kwargs):
+        prj = Project.objects.get(pk = kwargs['pid'])
+        self.queryset = prj.get_all_compatible_wrtemplates()
+        self.queryset = self.queryset.order_by(self.default_orderby)
+
+        self.static_context_extra['current_layers'] = \
+                self.project_layers = \
+                prj.get_project_layer_versions(pk=True)
+        self.static_context_extra['current_wrtemplates'] = \
+                self.project_wrtemplates = \
+                prj.get_project_wrtemplates(pk=True)
+
+    def setup_columns(self, *args, **kwargs):
+        self.add_column(title="Wind River Template",
+                        hideable=False,
+                        orderable=True,
+                        field_name="name")
+
+        self.add_column(title="Description",
+                        field_name="description")
+
+        layer_link_template = '''
+        <a href="{% url 'layerdetails' extra.pid data.layer_version.id %}">
+        {{data.layer_version.layer.name}}</a>
+        '''
+
+        self.add_column(title="Layer",
+                        static_data_name="layer_version__layer__name",
+                        static_data_template=layer_link_template,
+                        orderable=True,
+                        field_name="layer_version__layer__name")
+
+        self.add_column(title="Git revision",
+                        help_text="The Git branch, tag or commit. For the layers from the OpenEmbedded layer source, the revision is always the branch compatible with the Yocto Project version you selected for this project",
+                        hidden=True,
+                        field_name="layer_version__get_vcs_reference")
+
+        wrtemplate_file_template = '''<code>conf/machine/{{data.name}}.conf</code>
+        <a href="{{data.get_vcs_machine_file_link_url}}" target="_blank"><span class="glyphicon glyphicon-new-window"></i></a>'''
+
+        self.add_column(title="Template file",
+                        hidden=True,
+                        static_data_name="templatefile",
+                        static_data_template=wrtemplate_file_template)
+
+
+        self.add_column(title="Select",
+                        help_text="Adds the selected template to the project",
+                        hideable=False,
+                        filter_name="in_current_project",
+                        static_data_name="add-del-layers",
+                        static_data_template='{% include "wrtemplate_btn.html" %}')
+
+
+class WRDistrosTable(ToasterTable):
+    """Table of WRDistros in Toaster"""
+
+    def __init__(self, *args, **kwargs):
+        super(WRDistrosTable, self).__init__(*args, **kwargs)
+        self.empty_state = "Toaster has no distro information for this project. Sadly, 			   distro information cannot be obtained from builds, so this 				  page will remain empty."
+        self.title = "Compatible Distros"
+        self.default_orderby = "name"
+
+    def get_context_data(self, **kwargs):
+        context = super(WRDistrosTable, self).get_context_data(**kwargs)
+        context['project'] = Project.objects.get(pk=kwargs['pid'])
+        return context
+
+    def setup_filters(self, *args, **kwargs):
+        project = Project.objects.get(pk=kwargs['pid'])
+
+        in_current_project_filter = TableFilter(
+            "in_current_project",
+            "Filter by project Distros"
+        )
+
+        in_project_action = TableFilterActionToggle(
+            "in_project",
+            "Distro provided by layers added to this project",
+            ProjectFilters.in_project(self.project_layers)
+        )
+
+        not_in_project_action = TableFilterActionToggle(
+            "not_in_project",
+            "Distros provided by layers not added to this project",
+            ProjectFilters.not_in_project(self.project_layers)
+        )
+
+        in_current_project_filter.add_action(in_project_action)
+        in_current_project_filter.add_action(not_in_project_action)
+        self.add_filter(in_current_project_filter)
+
+    def setup_queryset(self, *args, **kwargs):
+        prj = Project.objects.get(pk = kwargs['pid'])
+        self.queryset = prj.get_all_compatible_wrdistros()
+        self.queryset = self.queryset.order_by(self.default_orderby)
+
+        self.static_context_extra['current_layers'] = \
+                self.project_layers = \
+                prj.get_project_layer_versions(pk=True)
+
+    def setup_columns(self, *args, **kwargs):
+
+        self.add_column(title="Distro",
+                        hideable=False,
+                        orderable=True,
+                        field_name="name")
+
+        self.add_column(title="Description",
+                        field_name="description")
+
+        layer_link_template = '''
+        <a href="{% url 'layerdetails' extra.pid data.layer_version.id %}">
+        {{data.layer_version.layer.name}}</a>
+        '''
+
+        self.add_column(title="Layer",
+                        static_data_name="layer_version__layer__name",
+                        static_data_template=layer_link_template,
+                        orderable=True)
+
+        self.add_column(title="Git revision",
+                        help_text="The Git branch, tag or commit. For the layers from the OpenEmbedded layer source, the revision is always the branch compatible with the Yocto Project version you selected for this project",
+                        hidden=True,
+                        field_name="layer_version__get_vcs_reference")
+
+        wrtemplate_file_template = '''<code>conf/machine/{{data.name}}.conf</code>
+        <a href="{{data.get_vcs_machine_file_link_url}}" target="_blank"><span class="glyphicon glyphicon-new-window"></i></a>'''
+
+        self.add_column(title="Distro file",
+                        hidden=True,
+                        static_data_name="templatefile",
+                        static_data_template=wrtemplate_file_template)
+
+
+        self.add_column(title="Select",
+                        help_text="Sets the selected distro to the project",
+                        hideable=False,
+                        filter_name="in_current_project",
+                        static_data_name="add-del-layers",
+                        static_data_template='{% include "wrdistro_btn.html" %}')
+
+### WIND_RIVER_EXTENSION_END ###
+
+
