@@ -715,6 +715,9 @@ class BBCooker:
         Create a dependency graph of pkgs_to_build including reverse dependency
         information.
         """
+        if not task.startswith("do_"):
+            task = "do_%s" % task
+
         runlist, taskdata = self.prepareTreeData(pkgs_to_build, task)
         rq = bb.runqueue.RunQueue(self, self.data, self.recipecaches, taskdata, runlist)
         rq.rqdata.prepare()
