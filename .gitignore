@@ -15,3 +15,5 @@ doc/bitbake-user-manual/bitbake-user-manual.tgz
 lib/toaster/contrib/tts/backlog.txt
 lib/toaster/contrib/tts/log/*
 lib/toaster/contrib/tts/.cache/*
+lib/toaster/orm/fixtures/custom.xml
+
