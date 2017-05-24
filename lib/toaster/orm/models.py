@@ -221,16 +221,16 @@ class Project(models.Model):
             return( -1 )
 
     def get_last_outcome(self):
-        build_id = self.get_last_build_id
+        build_id = self.get_last_build_id()
         if (-1 == build_id):
             return( "" )
         try:
-            return Build.objects.filter( id = self.get_last_build_id )[ 0 ].outcome
+            return Build.objects.filter( id = build_id )[ 0 ].outcome
         except (Build.DoesNotExist,IndexError):
             return( "not_found" )
 
     def get_last_target(self):
-        build_id = self.get_last_build_id
+        build_id = self.get_last_build_id()
         if (-1 == build_id):
             return( "" )
         try:
@@ -239,7 +239,7 @@ class Project(models.Model):
             return( "not_found" )
 
     def get_last_errors(self):
-        build_id = self.get_last_build_id
+        build_id = self.get_last_build_id()
         if (-1 == build_id):
             return( 0 )
         try:
@@ -248,7 +248,7 @@ class Project(models.Model):
             return( "not_found" )
 
     def get_last_warnings(self):
-        build_id = self.get_last_build_id
+        build_id = self.get_last_build_id()
         if (-1 == build_id):
             return( 0 )
         try:
@@ -265,7 +265,7 @@ class Project(models.Model):
         return last_build.get_image_file_extensions()
 
     def get_last_imgfiles(self):
-        build_id = self.get_last_build_id
+        build_id = self.get_last_build_id()
         if (-1 == build_id):
             return( "" )
         try:
@@ -413,6 +413,12 @@ class Project(models.Model):
             for v in self.projectvariable_set.all():
                 BRVariable.objects.create(req = br, name = v.name, value = v.value)
 
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            wr_template_list=[]
+            for t in self.projecttemplate_set.all():
+                wr_template_list.append(t.wrtemplate.name)
+            BRVariable.objects.get_or_create(req = br, name = "WRTEMPLATE", value = ' '.join(wr_template_list))
+            ### WIND_RIVER_EXTENSION_END ###
 
             try:
                 br.build.machine = self.projectvariable_set.get(name = 'MACHINE').value
@@ -1508,12 +1514,12 @@ class Layer_Version(models.Model):
         return self._handle_url_path(self.layer.vcs_web_tree_base_url, '')
 
     def get_vcs_reference(self):
+        if self.commit is not None and len(self.commit) > 0:
+            return self.commit
         if self.branch is not None and len(self.branch) > 0:
             return self.branch
         if self.release is not None:
             return self.release.name
-        if self.commit is not None and len(self.commit) > 0:
-            return self.commit
         return 'N/A'
 
     def get_detailspage_url(self, project_id):

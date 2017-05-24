@@ -1583,6 +1583,7 @@ class WRTemplatesTable(ToasterTable):
     def setup_queryset(self, *args, **kwargs):
         prj = Project.objects.get(pk = kwargs['pid'])
         self.queryset = prj.get_all_compatible_wrtemplates()
+        self.queryset = self.queryset.exclude(name='default')
         self.queryset = self.queryset.order_by(self.default_orderby)
 
         self.static_context_extra['current_layers'] = \
@@ -1617,6 +1618,7 @@ class WRTemplatesTable(ToasterTable):
                         hidden=True,
                         field_name="layer_version__get_vcs_reference")
 
+        """  TODO
         wrtemplate_file_template = '''<code>conf/machine/{{data.name}}.conf</code>
         <a href="{{data.get_vcs_machine_file_link_url}}" target="_blank"><span class="glyphicon glyphicon-new-window"></i></a>'''
 
@@ -1624,7 +1626,7 @@ class WRTemplatesTable(ToasterTable):
                         hidden=True,
                         static_data_name="templatefile",
                         static_data_template=wrtemplate_file_template)
-
+        """
 
         self.add_column(title="Select",
                         help_text="Adds the selected template to the project",

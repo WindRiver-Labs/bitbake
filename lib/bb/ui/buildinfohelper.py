@@ -737,7 +737,12 @@ class ORMWrapper(object):
 
     def save_build_package_information(self, build_obj, package_info, recipes,
                                        built_package):
-       # assert isinstance(build_obj, Build)
+        # assert isinstance(build_obj, Build)
+
+        if not 'PN' in package_info:
+            # fixup minimal package info (e.g. kernel module)
+            logger.warning("Minimal Package information ='%s'",package_info['PKG'])
+            return
 
         # create and save the object
         pname = package_info['PKG']
@@ -759,8 +764,12 @@ class ORMWrapper(object):
                                           file_path=built_recipe.file_path,
                                           version=built_recipe.version)
 
-            except (Recipe.DoesNotExist, Recipe.MultipleObjectsReturned):
-                logger.debug("We did not find one recipe for the configuration"
+            except (Recipe.DoesNotExist):
+                logger.debug("We did not find ANY recipe for the configuration"
+                             "data package %s" % pname)
+                return
+            except (Recipe.MultipleObjectsReturned):
+                logger.debug("We found more than one recipe for the configuration"
                              "data package %s" % pname)
                 return
 
@@ -1003,7 +1012,9 @@ class BuildInfoHelper(object):
                 if p.fullmatch(lvo.layer.local_source_dir):
                     return lvo
         #if we get here, we didn't read layers correctly; dump whatever information we have on the error log
-        logger.warning("Could not match layer dependency for path %s : %s", path, self.orm_wrapper.layer_version_objects)
+        logger.warning("Could not match layer dependency for path %s : %s",
+                       pathRE,
+                       self.orm_wrapper.layer_version_objects)
 
 
 
@@ -1398,9 +1409,11 @@ class BuildInfoHelper(object):
             for lv in event._depgraph['layer-priorities']:
                 (_, path, _, priority) = lv
                 layer_version_obj = self._get_layer_version_for_dependency(path)
-                assert layer_version_obj is not None
-                layer_version_obj.priority = priority
-                layer_version_obj.save()
+                if layer_version_obj:
+                    layer_version_obj.priority = priority
+                    layer_version_obj.save()
+                else:
+                    logger.warning("ERROR: no layer version information for '%s'" % path)
 
         # save recipe information
         self.internal_state['recipes'] = {}
