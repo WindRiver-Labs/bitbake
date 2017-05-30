@@ -160,9 +160,9 @@ urlpatterns = patterns('toastergui.views',
         url(r'^project/(?P<pid>\d+)/wrtemplates/$',
             tables.WRTemplatesTable.as_view(template_name="generic-toastertable-page.html"),
             name="projectwrtemplates"),
-        url(r'^project/(?P<pid>\d+)/wrdistros/$',
-            tables.WRDistrosTable.as_view(template_name="generic-toastertable-page.html"),
-            name="projectwrdistros"),
+        url(r'^project/(?P<pid>\d+)/distros/$',
+            tables.DistrosTable.as_view(template_name="generic-toastertable-page.html"),
+            name="projectdistros"),
         ### WIND_RIVER_EXTENSION_END ###
 
         url(r'^project/(?P<pid>\d+)/customrecipe/(?P<custrecipeid>\d+)/selectpackages/$',

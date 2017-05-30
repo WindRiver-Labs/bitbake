@@ -24,7 +24,7 @@ from orm.models import Recipe, ProjectLayer, Layer_Version, Machine, Project
 from orm.models import CustomImageRecipe, Package, Target, Build, LogMessage, Task
 from orm.models import CustomImagePackage, Package_DependencyManager
 ### WIND_RIVER_EXTENSION_BEGIN ###
-from orm.models import WRTemplate, WRDistro
+from orm.models import WRTemplate, Distro
 ### WIND_RIVER_EXTENSION_END ###
 from django.db.models import Q, Max, Sum, Count, When, Case, Value, IntegerField
 from django.conf.urls import url
@@ -1636,17 +1636,17 @@ class WRTemplatesTable(ToasterTable):
                         static_data_template='{% include "wrtemplate_btn.html" %}')
 
 
-class WRDistrosTable(ToasterTable):
-    """Table of WRDistros in Toaster"""
+class DistrosTable(ToasterTable):
+    """Table of Distros in Toaster"""
 
     def __init__(self, *args, **kwargs):
-        super(WRDistrosTable, self).__init__(*args, **kwargs)
+        super(DistrosTable, self).__init__(*args, **kwargs)
         self.empty_state = "Toaster has no distro information for this project. Sadly, 			   distro information cannot be obtained from builds, so this 				  page will remain empty."
         self.title = "Compatible Distros"
         self.default_orderby = "name"
 
     def get_context_data(self, **kwargs):
-        context = super(WRDistrosTable, self).get_context_data(**kwargs)
+        context = super(DistrosTable, self).get_context_data(**kwargs)
         context['project'] = Project.objects.get(pk=kwargs['pid'])
         return context
 
@@ -1676,7 +1676,7 @@ class WRDistrosTable(ToasterTable):
 
     def setup_queryset(self, *args, **kwargs):
         prj = Project.objects.get(pk = kwargs['pid'])
-        self.queryset = prj.get_all_compatible_wrdistros()
+        self.queryset = prj.get_all_compatible_distros()
         self.queryset = self.queryset.order_by(self.default_orderby)
 
         self.static_context_extra['current_layers'] = \
@@ -1722,7 +1722,7 @@ class WRDistrosTable(ToasterTable):
                         hideable=False,
                         filter_name="in_current_project",
                         static_data_name="add-del-layers",
-                        static_data_template='{% include "wrdistro_btn.html" %}')
+                        static_data_template='{% include "distro_btn.html" %}')
 
 ### WIND_RIVER_EXTENSION_END ###
 

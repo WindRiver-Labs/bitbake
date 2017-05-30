@@ -25,7 +25,7 @@ from orm.models import LayerSource, Layer, Release, Layer_Version
 from orm.models import LayerVersionDependency, Machine, Recipe
 from orm.models import ToasterSetting
 ### WIND_RIVER_EXTENSION_BEGIN ###
-from orm.models import WRTemplate, WRDistro
+from orm.models import WRTemplate, Distro
 ### WIND_RIVER_EXTENSION_END ###
 
 import os
@@ -344,7 +344,7 @@ class Command(NoArgsCommand):
 
         total = len(distros_info)
         for i, di in enumerate(distros_info):
-            distro, created = WRDistro.objects.get_or_create(
+            distro, created = Distro.objects.get_or_create(
                 name=di['name'],
                 layer_version=Layer_Version.objects.get(
                     pk=li_layer_branch_id_to_toaster_lv_id[di['layerbranch']]))
@@ -352,7 +352,7 @@ class Command(NoArgsCommand):
             distro.name = di['name']
             distro.description = di['description']
             distro.save()
-            self.mini_progress("wrdistros", i, total)
+            self.mini_progress("distros", i, total)
         ### WIND_RIVER_EXTENSION_END ###
 
         # update machines
