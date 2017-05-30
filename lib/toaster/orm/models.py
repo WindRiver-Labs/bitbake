@@ -321,7 +321,7 @@ class Project(models.Model):
     def get_available_distros(self):
         """ Returns QuerySet of all Distros which are provided by the
         Layers currently added to the Project """
-        queryset = WRDistro.objects.filter(
+        queryset = Distro.objects.filter(
             layer_version__in=self.get_project_layer_versions())
 
         return queryset
@@ -352,10 +352,10 @@ class Project(models.Model):
             return wrtemplates
     ### WIND_RIVER_EXTENSION_END ###
 
-    def get_all_compatible_wrdistros(self):
+    def get_all_compatible_distros(self):
         """ Returns QuerySet of all the compatible Wind River distros available to the
         project including ones from Layers not currently added """
-        queryset = WRDistro.objects.filter(
+        queryset = Distro.objects.filter(
             layer_version__in=self.get_all_compatible_layer_versions())
 
         return queryset
@@ -1820,7 +1820,7 @@ class ProjectTemplate(models.Model):
     def __unicode__(self):
         return "%s, %s" % (self.project.name, self.template)
 
-class WRDistro(models.Model):
+class Distro(models.Model):
     search_allowed_fields = ["name", "description", "layer_version__layer__name"]
     up_date = models.DateTimeField(null = True, default = None)
 
@@ -1828,12 +1828,12 @@ class WRDistro(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
-    def get_vcs_wrdistro_file_link_url(self):
+    def get_vcs_distro_file_link_url(self):
         path = self.name+'.conf'
         return self.layer_version.get_vcs_file_link_url(path)
 
     def __unicode__(self):
-        return "WRDistro " + self.name + "(" + self.description + ")"
+        return "Distro " + self.name + "(" + self.description + ")"
 ### WIND_RIVER_EXTENSION_END ###
 
 
