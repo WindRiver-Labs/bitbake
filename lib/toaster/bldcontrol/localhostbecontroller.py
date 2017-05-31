@@ -52,12 +52,14 @@ class LocalhostBEController(BuildEnvironmentController):
         self.pokydirname = None
         self.islayerset = False
 
-    def _shellcmd(self, command, cwd=None, nowait=False):
+    def _shellcmd(self, command, cwd=None, nowait=False,env=None):
         if cwd is None:
             cwd = self.be.sourcedir
+        if env is None:
+            env=os.environ.copy()
 
-        logger.debug("lbc_shellcmmd: (%s) %s" % (cwd, command))
-        p = subprocess.Popen(command, cwd = cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logger.debug("lbc_shellcmd: (%s) %s" % (cwd, command))
+        p = subprocess.Popen(command, cwd = cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         if nowait:
             return
         (out,err) = p.communicate()
@@ -86,7 +88,7 @@ class LocalhostBEController(BuildEnvironmentController):
         return local_checkout_path
 
     ### WIND_RIVER_EXTENSION_BEGIN ###
-    def proccessSetupLayerXml(self, name, dirpath, giturl, commit, localdirname):
+    def proccessSetupLayerXml(self, name, dirpath, giturl, commit, localdirname,git_env):
         repo_xml=os.path.join(ToasterSetting.objects.get(name = 'SETUP_XMLDIR').value,name+'.xml')
         logger.debug("proccessSetupLayerXml: looking for setup xml %s" % repo_xml)
         xml_remotes={}
@@ -119,12 +121,12 @@ class LocalhostBEController(BuildEnvironmentController):
                     # clone and insert the sub-layer repo
                     if not os.path.exists(xml_path):
                         if "True" == xml_bare:
-                            self._shellcmd('git clone --bare "%s" "%s"' % (xml_remote, xml_path))
+                            self._shellcmd('git clone --bare "%s" "%s"' % (xml_remote, xml_path),env=git_env)
                         else:
-                            self._shellcmd('git clone "%s" "%s"' % (xml_remote, xml_path))
+                            self._shellcmd('git clone "%s" "%s"' % (xml_remote, xml_path),env=git_env)
                             ref = commit if re.match('^[a-fA-F0-9]+$', commit) else 'origin/%s' % commit
                             try:
-                                self._shellcmd('git fetch --all && git reset --hard "%s"' % ref, xml_path)
+                                self._shellcmd('git fetch --all && git reset --hard "%s"' % ref, xml_path,env=git_env)
                             except:
                                 logger.debug("localhostbecontroller: XML Warning commit %s not present in repo '%s'" % (commit, name))
     ### WIND_RIVER_EXTENSION_END ###
@@ -136,6 +138,15 @@ class LocalhostBEController(BuildEnvironmentController):
 
         layerlist = []
         nongitlayerlist = []
+
+        # append anspass environment if present
+        git_env = os.environ.copy()
+        toaster_anspass_data=os.path.join(self.be.sourcedir,'.toaster_anspass')
+        if os.path.exists(toaster_anspass_data):
+            with open(toaster_anspass_data,"r") as anspassfile:
+                for line in anspassfile:
+                    name,value = line.strip().split('=')
+                    git_env[name]=value
 
         # set layers in the layersource
 
@@ -209,18 +220,18 @@ class LocalhostBEController(BuildEnvironmentController):
             else:
                 if giturl in cached_layers:
                     logger.debug("localhostbecontroller git-copying %s to %s" % (cached_layers[giturl], localdirname))
-                    self._shellcmd("git clone \"%s\" \"%s\"" % (cached_layers[giturl], localdirname))
-                    self._shellcmd("git remote remove origin", localdirname)
-                    self._shellcmd("git remote add origin \"%s\"" % giturl, localdirname)
+                    self._shellcmd("git clone \"%s\" \"%s\"" % (cached_layers[giturl], localdirname),env=git_env)
+                    self._shellcmd("git remote remove origin", localdirname,env=git_env)
+                    self._shellcmd("git remote add origin \"%s\"" % giturl, localdirname,env=git_env)
                 else:
                     logger.debug("localhostbecontroller: cloning %s in %s" % (giturl, localdirname))
-                    self._shellcmd('git clone "%s" "%s"' % (giturl, localdirname))
+                    self._shellcmd('git clone "%s" "%s"' % (giturl, localdirname),env=git_env)
 
             # branch magic name "HEAD" will inhibit checkout
             if commit != "HEAD":
                 logger.debug("localhostbecontroller: checking out commit %s to %s " % (commit, localdirname))
                 ref = commit if re.match('^[a-fA-F0-9]+$', commit) else 'origin/%s' % commit
-                self._shellcmd('git fetch --all && git reset --hard "%s"' % ref, localdirname)
+                self._shellcmd('git fetch --all && git reset --hard "%s"' % ref, localdirname,env=git_env)
 
             # take the localdirname as poky dir if we can find the oe-init-build-env
             if self.pokydirname is None and os.path.exists(os.path.join(localdirname, "oe-init-build-env")):
@@ -229,8 +240,8 @@ class LocalhostBEController(BuildEnvironmentController):
 
                 # make sure we have a working bitbake
                 if not os.path.exists(os.path.join(self.pokydirname, 'bitbake')):
-                    logger.debug("localhostbecontroller: checking bitbake into the poky dirname %s " % self.pokydirname)
-                    self._shellcmd("git clone -b \"%s\" \"%s\" \"%s\" " % (bitbake.commit, bitbake.giturl, os.path.join(self.pokydirname, 'bitbake')))
+                    logger.debug("localhostbecontrollerFOO3: checking bitbake into the poky dirname %s " % self.pokydirname)
+                    self._shellcmd("git clone -b \"%s\" \"%s\" \"%s\" " % (bitbake.commit, bitbake.giturl, os.path.join(self.pokydirname, 'bitbake')),env=git_env)
 
             # verify our repositories
             for name, dirpath in gitrepos[(giturl, commit)]:
@@ -245,7 +256,7 @@ class LocalhostBEController(BuildEnvironmentController):
             ### WIND_RIVER_EXTENSION_BEGIN ###
             # process XML layer extensions
             for name, dirpath in gitrepos[(giturl, commit)]:
-                self.proccessSetupLayerXml(name, dirpath, giturl, commit, localdirname)
+                self.proccessSetupLayerXml(name, dirpath, giturl, commit, localdirname, git_env)
             ### WIND_RIVER_EXTENSION_END ###
 
         logger.debug("localhostbecontroller: current layer list %s " % pformat(layerlist))
