@@ -41,6 +41,19 @@ class Migration(migrations.Migration):
                 ('wrtemplate', models.ForeignKey(to='orm.WRTemplate')),
             ],
         ),
+        migrations.CreateModel(
+            name='BuildTemplate',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('build', models.ForeignKey(related_name='wrtemplate_build', default=None, to='orm.Build', null=True)),
+                ('wrtemplate', models.ForeignKey(to='orm.WRTemplate')),
+            ],
+        ),
+        migrations.AddField(
+            model_name='build',
+            name='kernel',
+            field=models.TextField(null=True, default=None),
+        ),
     ]
 ### WIND_RIVER_EXTENSION_END ###
 

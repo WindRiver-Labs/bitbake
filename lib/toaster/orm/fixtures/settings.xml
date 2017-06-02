@@ -30,4 +30,9 @@
     <field type="CharField" name="name">DEFCONF_DL_DIR</field>
     <field type="CharField" name="value">${TOPDIR}/../downloads</field>
   </object>
+  <!-- Wind River Linux  project settings override -->
+  <object model="orm.toastersetting" pk="99">
+    <field type="CharField" name="name">CUSTOM_XML_ONLY</field>
+    <field type="CharField" name="value">True</field>
+  </object>
 </django-objects>

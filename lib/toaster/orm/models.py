@@ -453,6 +453,7 @@ class Build(models.Model):
     machine = models.CharField(max_length=100)
     distro = models.CharField(max_length=100)
     distro_version = models.CharField(max_length=100)
+    kernel = models.CharField(max_length=100)
     started_on = models.DateTimeField()
     completed_on = models.DateTimeField()
     outcome = models.IntegerField(choices=BUILD_OUTCOME, default=IN_PROGRESS)
@@ -1818,7 +1819,15 @@ class ProjectTemplate(models.Model):
     wrtemplate = models.ForeignKey(WRTemplate, null=True)
 
     def __unicode__(self):
-        return "%s, %s" % (self.project.name, self.template)
+        return "%s, %s" % (self.project.name, self.wrtemplate)
+
+class BuildTemplate(models.Model):
+    build = models.ForeignKey(Build, related_name='wrtemplate_build',
+                              default=None, null=True)
+    wrtemplate = models.ForeignKey(WRTemplate, null=True)
+
+    def __unicode__(self):
+        return "%s, %s" % (self.build.name, self.wrtemplate)
 
 class Distro(models.Model):
     search_allowed_fields = ["name", "description", "layer_version__layer__name"]

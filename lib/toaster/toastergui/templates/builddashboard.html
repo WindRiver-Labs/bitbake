@@ -212,7 +212,10 @@
               <dl>
           <dt>Machine</dt><dd>{{build.machine}}</dd>
           <dt>Distro</dt><dd>{{build.distro}}</dd>
+          <dt>Kernel</dt><dd>{{build.kernel}}</dd>
           <dt>Layers</dt><dd><ul class="list-unstyled">{% for i in build.layer_version_build.all|dictsort:"layer.name" %}<li>{{i.layer.name}}</li>{%endfor%}</ul></dd>
+              </dl>
+          <dt>WRTemplates</dt><dd><ul class="list-unstyled">{% for i in build.wrtemplate_build.all|dictsort:"wrtemplate.name" %}<li>{{i.wrtemplate.name}}</li>{%endfor%}</ul></dd>
               </dl>
         </div>
       </div>

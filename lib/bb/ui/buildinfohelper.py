@@ -44,6 +44,9 @@ from orm.models import Task_Dependency, Package_Dependency
 from orm.models import Recipe_Dependency, Provides
 from orm.models import Project, CustomImagePackage, CustomImageRecipe
 from orm.models import signal_runbuilds
+### WIND_RIVER_EXTENSION_BEGIN ###
+from orm.models import WRTemplate, BuildTemplate
+### WIND_RIVER_EXTENSION_END ###
 
 from bldcontrol.models import BuildEnvironment, BuildRequest
 
@@ -968,9 +971,26 @@ class BuildInfoHelper(object):
             build_info['distro_version'] = self.server.runCommand(["getVariable", "DISTRO_VERSION"])[0]
             changed = True
 
+        if not build.kernel:
+            build_info['kernel'] = self.server.runCommand(["getVariable", "LINUX_KERNEL_TYPE"])[0]
+            changed = True
+
         if not build.bitbake_version:
             build_info['bitbake_version'] = self.server.runCommand(["getVariable", "BB_VERSION"])[0]
             changed = True
+
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        if not 'wrtemplates' in self.internal_state:
+            self.internal_state['wrtemplates']=self.server.runCommand(["getVariable", "WRTEMPLATE"])[0]
+            for template_name in self.internal_state['wrtemplates'].split():
+                matching_wrtemplates = WRTemplate.objects.filter(name=template_name)
+                if matching_wrtemplates.count() == 1:
+                    build_template=BuildTemplate.objects.create(
+                        build = build,
+                        wrtemplate = matching_wrtemplates[0]
+                        )
+                    rc=build_template.save()
+        ### WIND_RIVER_EXTENSION_END ###
 
         if changed:
             self.orm_wrapper.update_build(self.internal_state['build'], build_info)
