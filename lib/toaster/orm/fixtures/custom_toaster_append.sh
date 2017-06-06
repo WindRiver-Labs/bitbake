@@ -27,13 +27,13 @@ TOASTER_ANSPASS=${TOASTER_DIR}/.toaster_anspass
 
 if [ -z `which anspass` ] ; then
     echo "ERROR: environment is missing anspass tools"
-    return 1
+    exit 1
 fi
 
 if [ "web_start_postpend" = "$1" ] ; then
     # is there an anspass environment?
     if [  ! -d $TOASTER_DIR/bin/.anspass ] ; then
-        return 0
+        exit 0
     fi
     cd $TOASTER_DIR
     . wrlinux-9/data/environment.d/setup_anspass
@@ -46,19 +46,19 @@ if [ "web_start_postpend" = "$1" ] ; then
     cd $CWD
     if [ -z "$ANSPASS_TOKEN" ] ; then
         echo "ERROR: could not start anspass. Restart Toaster in a moment."
-        return 1
+        exit 1
     fi
     echo "ANSPASS_TOKEN=$ANSPASS_TOKEN"  > $TOASTER_ANSPASS
     echo "ANSPASS_PATH=$ANSPASS_PATH"   >> $TOASTER_ANSPASS
     echo "SSH_ASKPASS=$SSH_ASKPASS"     >> $TOASTER_ANSPASS
     echo "GIT_ASKPASS=$GIT_ASKPASS"     >> $TOASTER_ANSPASS
-    return 0
+    exit 0
 fi
 
 if [ "web_stop_postpend" = "$1" ] ; then
     # is there an active Toaster anspass environment?
     if [  ! -d $TOASTER_DIR/bin/.anspass -o ! -f $TOASTER_ANSPASS ] ; then
-        return 0
+        exit 0
     fi
     cd $TOASTER_DIR
     . $TOASTER_ANSPASS
@@ -69,6 +69,6 @@ if [ "web_stop_postpend" = "$1" ] ; then
     rc=$?
     cd $CWD
     rm -f $TOASTER_ANSPASS
-    return $rc
+    exit $rc
 fi
 
