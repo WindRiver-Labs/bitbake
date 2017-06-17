@@ -19,7 +19,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 
 from orm.models import LayerSource, Layer, Release, Layer_Version
 from orm.models import LayerVersionDependency, Machine, Recipe
@@ -59,7 +59,7 @@ class Spinner(threading.Thread):
         self.signal = False
 
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     args = ""
     help = "Updates locally cached information from a layerindex server"
 
@@ -418,5 +418,5 @@ class Command(NoArgsCommand):
 
         os.system('setterm -cursor on')
 
-    def handle_noargs(self, **options):
+    def handle(self, **options):
         self.update()
