@@ -259,9 +259,9 @@ class ToasterTable(TemplateView):
                     queries = query
 
             if search_queries:
-               search_queries &= queries
+                search_queries &= queries
             else:
-               search_queries = queries
+                search_queries = queries
 
         self.queryset = self.queryset.filter(search_queries)
 
@@ -510,6 +510,10 @@ class MostRecentBuildsView(View):
             build['recipes_parsed_percentage'] = \
                 int((build_obj.recipes_parsed /
                      build_obj.recipes_to_parse) * 100)
+
+            build['repos_cloned_percentage'] = \
+                int((build_obj.repos_cloned /
+                     build_obj.repos_to_clone) * 100)
 
             tasks_complete_percentage = 0
             if build_obj.outcome in (Build.SUCCEEDED, Build.FAILED):
