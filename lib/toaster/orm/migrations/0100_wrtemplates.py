@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orm', '0015_layer_local_source_dir'),
+        ('orm', '0016_clone_progress'),
     ]
 
     operations = [
