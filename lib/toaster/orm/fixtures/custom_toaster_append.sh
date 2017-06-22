@@ -24,6 +24,8 @@ fi
 
 CWD=`pwd`
 TOASTER_ANSPASS=${TOASTER_DIR}/.toaster_anspass
+# Full path reset by 'setup.py' via 'toaster_fixture.py'
+WRLINUX_DIR=wrlinux-9
 
 if [ -z `which anspass` ] ; then
     echo "ERROR: environment is missing anspass tools"
@@ -36,7 +38,7 @@ if [ "web_start_postpend" = "$1" ] ; then
         exit 0
     fi
     cd $TOASTER_DIR
-    . wrlinux-9/data/environment.d/setup_anspass
+    . $WRLINUX_DIR/data/environment.d/setup_anspass
     anspass_setup
     if [ -z "$ANSPASS_TOKEN" ] ; then
         echo "...retry anspass setup..."
@@ -64,7 +66,7 @@ if [ "web_stop_postpend" = "$1" ] ; then
     . $TOASTER_ANSPASS
     export ANSPASS_TOKEN
     export ANSPASS_PATH
-    . wrlinux-9/data/environment.d/setup_anspass
+    . $WRLINUX_DIR/data/environment.d/setup_anspass
     anspass_stop
     rc=$?
     cd $CWD
