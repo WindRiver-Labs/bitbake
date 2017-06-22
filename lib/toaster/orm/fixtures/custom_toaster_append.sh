@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright (C) 2017 Wind River Systems, Inc.
 #
@@ -24,11 +24,18 @@ fi
 
 CWD=`pwd`
 TOASTER_ANSPASS=${TOASTER_DIR}/.toaster_anspass
-# Full path reset by 'setup.py' via 'toaster_fixture.py'
-WRLINUX_DIR=wrlinux-9
+# Full path to wrlinux-x passed by 'toaster_fixture.py' via 'custom.xml'
+WRLINUX_DIR="wrlinux-9"
+FIXTURE_DIR=`dirname $0`
+WRDIR_HINT=`grep "HINT:WRLINUX_DIR=" $FIXTURE_DIR/custom.xml`
+if [ -n "$WRDIR_HINT" ] ; then
+    WRLINUX_DIR=${WRDIR_HINT##*=\"}
+    WRLINUX_DIR=${WRLINUX_DIR%%\" *}
+fi
 
 if [ -z `which anspass` ] ; then
     echo "ERROR: environment is missing anspass tools"
+    echo "Source the 'environment-*' file from the installation"
     exit 1
 fi
 
