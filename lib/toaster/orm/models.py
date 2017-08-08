@@ -1665,7 +1665,7 @@ class CustomImageRecipe(Recipe):
 
     def get_base_recipe_file(self):
         """Get the base recipe file path if it exists on the file system"""
-        path_schema_one = "%s/%s" % (self.base_recipe.layer_version.dirpath,
+        path_schema_one = "%s/%s" % (self.base_recipe.layer_version.local_path,
                                      self.base_recipe.file_path)
 
         path_schema_two = self.base_recipe.file_path
@@ -1701,7 +1701,9 @@ class CustomImageRecipe(Recipe):
         if base_recipe_path:
             base_recipe = open(base_recipe_path, 'r').read()
         else:
-            raise IOError("Based on recipe file not found")
+            raise IOError("Based on recipe file not found: %s" %
+                          base_recipe_path)
+
 
         # Add a special case for when the recipe we have based a custom image
         # recipe on requires another recipe.
