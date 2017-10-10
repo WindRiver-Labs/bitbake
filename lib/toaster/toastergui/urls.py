@@ -158,6 +158,13 @@ urlpatterns = [
             name=tables.LayerMachinesTable.__name__.lower()),
 
 
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        url(r'^project/(?P<pid>\d+)/wrtemplates/$',
+            tables.WRTemplatesTable.as_view(template_name="generic-toastertable-page.html"),
+            name="projectwrtemplates"),
+        ### WIND_RIVER_EXTENSION_END ###
+
+
         url(r'^project/(?P<pid>\d+)/distros/$',
             tables.DistrosTable.as_view(template_name="generic-toastertable-page.html"),
             name="projectdistros"),
@@ -194,6 +201,11 @@ urlpatterns = [
 
         url(r'^xhr_typeahead/(?P<pid>\d+)/distros$',
             typeaheads.DistrosTypeAhead.as_view(), name='xhr_distrostypeahead'),
+
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        url(r'^xhr_typeahead/(?P<pid>\d+)/wrtemplates$',
+            typeaheads.WRTemplatesTypeAhead.as_view(), name='xhr_wrtemplatestypeahead'),
+        ### WIND_RIVER_EXTENSION_END ###
 
         url(r'^xhr_testreleasechange/(?P<pid>\d+)$', views.xhr_testreleasechange,
             name='xhr_testreleasechange'),
