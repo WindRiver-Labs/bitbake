@@ -50,6 +50,9 @@
         layersTypeAheadUrl: {% url 'xhr_layerstypeahead' project.id as paturl%}{{paturl|json}},
         machinesTypeAheadUrl: {% url 'xhr_machinestypeahead' project.id as paturl%}{{paturl|json}},
         distrosTypeAheadUrl: {% url 'xhr_distrostypeahead' project.id as paturl%}{{paturl|json}},
+        /* ### WIND_RIVER_EXTENSION_BEGIN ### */
+        wrtemplatesTypeAheadUrl: {% url 'xhr_wrtemplatestypeahead' project.id as paturl%}{{paturl|json}},
+        /* ### WIND_RIVER_EXTENSION_END ### */
         projectBuildsUrl: {% url 'projectbuilds' project.id as pburl %}{{pburl|json}},
         xhrCustomRecipeUrl : "{% url 'xhr_customrecipe' %}",
         projectId : {{project.id}},
@@ -90,7 +93,9 @@
           </button>
           <div class="toaster-navbar-brand">
             <a href="/">
-              <img class="logo" src="{% static 'img/logo.png' %}" class="" alt="Yocto logo project"/>
+              <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+              <img class="logo" src="{% static 'img/wr_logo.png' %}" class="" alt="Wind River logo"/>
+              <!-- ### WIND_RIVER_EXTENSION_END ### -->
             </a>
             <a class="brand" href="/">Toaster</a>
             {% if DEBUG %}
@@ -126,6 +131,13 @@
                 Documentation
               </a>
               </li>
+              <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+              <li>
+              <a target="_blank" href="https://knowledge.windriver.com/en-us/000_Products/000/010/050">
+                <i class="glyphicon glyphicon-book"></i>
+                Wind River Documentation
+              </a>
+              <!-- ### WIND_RIVER_EXTENSION_END ### -->
             </ul>
             <a class="btn btn-default navbar-btn navbar-right" id="new-project-button" href="{% url 'newproject' %}">New project</a>
           </div>
