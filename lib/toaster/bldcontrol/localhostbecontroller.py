@@ -87,6 +87,49 @@ class LocalhostBEController(BuildEnvironmentController):
         #logger.debug("localhostbecontroller: using HEAD checkout in %s" % local_checkout_path)
         return local_checkout_path
 
+    ### WIND_RIVER_EXTENSION_BEGIN ###
+    def proccessSetupLayerXml(self, name, dirpath, giturl, commit, localdirname,git_env):
+        repo_xml=os.path.join(ToasterSetting.objects.get(name = 'SETUP_XMLDIR').value,name+'.xml')
+        logger.debug("proccessSetupLayerXml: looking for setup xml %s" % repo_xml)
+        xml_remotes={}
+        xml_remotes['base']=ToasterSetting.objects.get(name = 'SETUP_GITURL').value
+        if ToasterSetting.objects.filter(name='SETUP_PATH_FILTER').count() == 1:
+            xml_path_filter=ToasterSetting.objects.get(name = 'SETUP_PATH_FILTER').value
+        else:
+            xml_path_filter=''
+
+        if os.path.exists(repo_xml):
+            logger.debug("proccessSetupLayerXml: processing setup xml %s" % repo_xml)
+            import xml.etree.ElementTree
+            with open(repo_xml,"r") as logfile:
+                for line in logfile:
+                    if 0 == len(line.strip()):
+                        continue
+                    e = xml.etree.ElementTree.XML(line)
+                    xml_name=e.get('name')
+                    xml_remote=os.path.join(xml_remotes[e.get('remote')],xml_name)
+                    xml_path=e.get('path')
+                    if xml_path_filter:
+                        # substitution on xml path: 's|<regex>|xyz|'
+                        if xml_path_filter.startswith('s'):
+                            filter_params=xml_path_filter.split(xml_path_filter[1])
+                            xml_path=re.sub(filter_params[1],filter_params[2], xml_path)
+                            if xml_path.startswith('/'):
+                                xml_path=xml_path[1:]
+                    xml_path=os.path.join(localdirname,xml_path)
+                    xml_bare=e.get('bare')
+                    # clone and insert the sub-layer repo
+                    if not os.path.exists(xml_path):
+                        if "True" == xml_bare:
+                            self._shellcmd('git clone --bare "%s" "%s"' % (xml_remote, xml_path),env=git_env)
+                        else:
+                            self._shellcmd('git clone "%s" "%s"' % (xml_remote, xml_path),env=git_env)
+                            ref = commit if re.match('^[a-fA-F0-9]+$', commit) else 'origin/%s' % commit
+                            try:
+                                self._shellcmd('git fetch --all && git reset --hard "%s"' % ref, xml_path,env=git_env)
+                            except:
+                                logger.debug("localhostbecontroller: XML Warning commit %s not present in repo '%s'" % (commit, name))
+    ### WIND_RIVER_EXTENSION_END ###
 
     def setCloneStatus(self,bitbake,status,total,current):
         bitbake.req.build.repos_cloned=current
@@ -102,6 +145,16 @@ class LocalhostBEController(BuildEnvironmentController):
         nongitlayerlist = []
         git_env = os.environ.copy()
         # (note: add custom environment settings here)
+
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        # append anspass environment if present
+        toaster_anspass_data=os.path.join(self.be.sourcedir,'.toaster_anspass')
+        if os.path.exists(toaster_anspass_data):
+            with open(toaster_anspass_data,"r") as anspassfile:
+                for line in anspassfile:
+                    name,value = line.strip().split('=')
+                    git_env[name]=value
+        ### WIND_RIVER_EXTENSION_END ###
 
         # set layers in the layersource
 
@@ -213,6 +266,13 @@ class LocalhostBEController(BuildEnvironmentController):
 
                 if name != "bitbake":
                     layerlist.append(localdirpath.rstrip("/"))
+
+
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            # process XML layer extensions
+            for name, dirpath in gitrepos[(giturl, commit)]:
+                self.proccessSetupLayerXml(name, dirpath, giturl, commit, localdirname, git_env)
+            ### WIND_RIVER_EXTENSION_END ###
 
         self.setCloneStatus(bitbake,'complete',clone_total,clone_count)
         logger.debug("localhostbecontroller: current layer list %s " % pformat(layerlist))

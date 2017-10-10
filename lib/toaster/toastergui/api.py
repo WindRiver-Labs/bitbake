@@ -39,6 +39,10 @@ from django.db.models import Q, F
 from django.db import Error
 from toastergui.templatetags.projecttags import filtered_filesizeformat
 
+### WIND_RIVER_EXTENSION_BEGIN ###
+from orm.models import ProjectTemplate, WRTemplate
+### WIND_RIVER_EXTENSION_END ###
+
 logger = logging.getLogger("toaster")
 
 
@@ -856,6 +860,10 @@ class XhrProject(View):
           Args:
               layerAdd = layer_version_id layer_version_id ...
               layerDel = layer_version_id layer_version_id ...
+              ### WIND_RIVER_EXTENSION_BEGIN ###
+              wrtemplateAdd = wrtemplate_id 
+              wrtemplateDel = wrtemplate_id 
+              ### WIND_RIVER_EXTENSION_END ###
               projectName = new_project_name
               machineName = new_machine_name
 
@@ -886,6 +894,26 @@ class XhrProject(View):
             ProjectLayer.objects.filter(
                 project=prj,
                 layercommit_id__in=layer_version_ids).delete()
+
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        # Add wrtemplates
+        if 'wrtemplateAdd' in request.POST and len(request.POST['wrtemplateAdd']) > 0:
+            for wrtemplate_id in request.POST['wrtemplateAdd'].split(','):
+                try:
+                    t = WRTemplate.objects.get(pk=int(wrtemplate_id))
+                    ProjectTemplate.objects.get_or_create(project=prj,
+                                                       wrtemplate=t)
+                except WRTemplate.DoesNotExist:
+                    return error_response("Wind River Template %s asked to add "
+                                          "doesn't exist" % wrtemplate_id)
+
+        # Remove wrtemplates
+        if 'wrtemplateDel' in request.POST and len(request.POST['wrtemplateDel']) > 0:
+            wrtemplate_ids = request.POST['wrtemplateDel'].split(',')
+            ProjectTemplate.objects.filter(
+                project=prj,
+                wrtemplate_id__in=wrtemplate_ids).delete()
+        ### WIND_RIVER_EXTENSION_END ###
 
         # Project name change
         if 'projectName' in request.POST:
@@ -970,9 +998,27 @@ class XhrProject(View):
                 "layersource": layer.layercommit.layer_source
             })
 
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        wrtObjs = []
+        for projecttemplate in project.projecttemplate_set.all():
+            wrtObjs.append({
+                "id": projecttemplate.wrtemplate.pk,
+                "name": projecttemplate.wrtemplate.name,
+                "description": projecttemplate.wrtemplate.description,
+
+                "vcs_url": projecttemplate.wrtemplate.layer_version.layer.vcs_url,
+                "local_source_dir": str(projecttemplate.wrtemplate.layer_version.layer.local_source_dir),
+                # XXX
+                "wrtemplatedetailurl": "XXX"
+            })
+        ### WIND_RIVER_EXTENSION_END ###
+
         data = {
             "name": project.name,
             "layers": layers,
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            "wrtemplates": wrtObjs,
+            ### WIND_RIVER_EXTENSION_END ###
             "freqtargets": freqtargets,
         }
 

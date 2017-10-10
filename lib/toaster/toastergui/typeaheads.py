@@ -130,6 +130,38 @@ class DistrosTypeAhead(ToasterTypeAhead):
         return results
 
 
+### WIND_RIVER_EXTENSION_BEGIN ###
+from orm.models import WRTemplate
+class WRTemplatesTypeAhead(ToasterTypeAhead):
+    """ Typeahead for all the Wind River Templates available in the current project's
+    configuration """
+    def __init__(self):
+        super(WRTemplatesTypeAhead, self).__init__()
+
+    def apply_search(self, search_term, prj, request):
+        wrtemplates = prj.get_available_wrtemplates()
+        #wrtemplates = wrtemplates.order_by("name")
+
+        primary_results = wrtemplates.filter(name__istartswith=search_term)
+        secondary_results = wrtemplates.filter(name__icontains=search_term).exclude(pk__in=primary_results)
+        tertiary_results = wrtemplates.filter(layer_version__layer__name__icontains=search_term).exclude(pk__in=primary_results).exclude(pk__in=secondary_results)
+
+        results = []
+
+        for wrt in list(primary_results) + list(secondary_results) + list(tertiary_results):
+
+            detail = "[ %s ]" % (wrt.layer_version.layer.name)
+            needed_fields = {
+                'id' : wrt.pk,
+                'name' : wrt.name,
+                'detail' : detail,
+            }
+
+            results.append(needed_fields)
+
+        return results
+### WIND_RIVER_EXTENSION_END ###
+
 class RecipesTypeAhead(ToasterTypeAhead):
     """ Typeahead for all the recipes available in the current project's
     configuration """
