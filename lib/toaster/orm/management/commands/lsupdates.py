@@ -25,6 +25,9 @@ from orm.models import LayerSource, Layer, Release, Layer_Version
 from orm.models import LayerVersionDependency, Machine, Recipe
 from orm.models import Distro
 from orm.models import ToasterSetting
+### WIND_RIVER_EXTENSION_BEGIN ###
+from orm.models import WRTemplate
+### WIND_RIVER_EXTENSION_END ###
 
 import os
 import sys
@@ -95,25 +98,51 @@ class Command(BaseCommand):
 
         proxy_settings = os.environ.get("http_proxy", None)
 
+        ### WIND_RIVER_EXTENSION_BEGIN ###
         def _get_json_response(apiurl=None):
             if None == apiurl:
                 apiurl=self.apiurl
-            http_progress = Spinner()
-            http_progress.start()
+            logger.debug("Fetching '%s'", apiurl)
+            if apiurl.startswith("http"):
+                http_progress = Spinner()
+                http_progress.start()
 
-            _parsedurl = urlparse(apiurl)
-            path = _parsedurl.path
+                _parsedurl = urlparse(apiurl)
+                path = _parsedurl.path
 
-            # logger.debug("Fetching %s", apiurl)
-            try:
-                res = urlopen(apiurl)
-            except URLError as e:
-                raise Exception("Failed to read %s: %s" % (path, e.reason))
+                try:
+                    res = urlopen(apiurl)
+                except URLError as e:
+                    raise Exception("Failed to read %s: %s" % (path, e.reason))
 
-            parsed = json.loads(res.read().decode('utf-8'))
+                parsed = json.loads(res.read().decode('utf-8'))
 
-            http_progress.stop()
-            return parsed
+                http_progress.stop()
+                return parsed
+            else:
+                global index_loaded
+                # file-based layer index
+                if self.apiurl == apiurl:
+                    # load file, return top level keys
+                    try:
+                        with open(apiurl,"r") as json_data:
+                            index_loaded = json.load(json_data)
+                    except FileNotFoundError as e:
+                        raise Exception("Failed to read Layer Index file %s: %s" % (apiurl, e.reason))
+
+                    parsed = {}
+                    for key in index_loaded.keys():
+                        parsed[key]=key
+                else:
+                    # branches?filter=name:WRLINUX_9_BASEORmaster
+                    filter=''
+                    p=apiurl.find('?')
+                    if p >= 0:
+                        filter=apiurl[p+1:]
+                        apiurl=apiurl[0:p]
+                    parsed= index_loaded[apiurl]
+                return parsed
+        ### WIND_RIVER_EXTENSION_END ###
 
         # verify we can get the basic api
         try:
@@ -229,6 +258,13 @@ class Command(BaseCommand):
 
         dependlist = {}
         for ldi in layerdependencies_info:
+
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            # SKIP OPTIONAL DEPENDS FOR NOW
+            if not ldi['required']:
+                continue
+            ### WIND_RIVER_EXTENSION_END ###
+
             try:
                 lv = Layer_Version.objects.get(
                     pk=li_layer_branch_id_to_toaster_lv_id[ldi['layerbranch']])
@@ -256,6 +292,28 @@ class Command(BaseCommand):
                 LayerVersionDependency.objects.get_or_create(layer_version=lv,
                                                              depends_on=lvd)
             self.mini_progress("Layer version dependencies", i, total)
+
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        # update Wind River Templates
+        logger.info("Fetching Wind River template information")
+#        templates_info = _get_json_response(
+#            apilinks['wrtemplates'] + "?filter=layerbranch__branch__name:%s" %
+#            "OR".join(whitelist_branch_names))
+        templates_info = _get_json_response(
+            apilinks['wrtemplates'])
+
+        total = len(templates_info)
+        for i, ti in enumerate(templates_info):
+            to, created = WRTemplate.objects.get_or_create(
+                name=ti['name'],
+                layer_version=Layer_Version.objects.get(
+                    pk=li_layer_branch_id_to_toaster_lv_id[ti['layerbranch']]))
+            to.up_date = ti['updated']
+            to.name = ti['name']
+            to.description = ti['description']
+            to.save()
+            self.mini_progress("wrtemplates", i, total)
+        ### WIND_RIVER_EXTENSION_END ###
 
         # update Distros
         logger.info("Fetching distro information")
@@ -323,6 +381,11 @@ class Command(BaseCommand):
                 ro.file_path = ri['filepath'] + "/" + ri['filename']
                 if 'inherits' in ri:
                     ro.is_image = 'image' in ri['inherits'].split()
+                    ### WIND_RIVER_EXTENSION_BEGIN ###
+                    if '' == ri['inherits'] and ri['filepath'].endswith('/images'):
+                        # workaround for Wind River image recipes (empty inherits)
+                        ro.is_image = True
+                    ### WIND_RIVER_EXTENSION_END ###
                 else:  # workaround for old style layer index
                     ro.is_image = "-image-" in ri['pn']
                 ro.save()
