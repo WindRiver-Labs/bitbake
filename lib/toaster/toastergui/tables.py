@@ -38,6 +38,8 @@ from toastergui.tablefilter import TableFilterActionToggle
 from toastergui.tablefilter import TableFilterActionDateRange
 from toastergui.tablefilter import TableFilterActionDay
 
+import os
+
 class ProjectFilters(object):
     @staticmethod
     def in_project(project_layers):
@@ -342,6 +344,8 @@ class RecipesTable(ToasterTable):
             'filter_name' : "in_current_project",
             'static_data_name' : "add-del-layers",
             'static_data_template' : '{% include "recipe_btn.html" %}'}
+    if '1' == os.environ.get('TOASTER_PROJECTSPECIFIC'):
+            build_col['static_data_template'] = '{% include "recipe_add_btn.html" %}'
 
     def get_context_data(self, **kwargs):
         project = Project.objects.get(pk=kwargs['pid'])
@@ -1636,8 +1640,58 @@ class WRTemplatesTable(ToasterTable):
                         filter_name="in_current_project",
                         static_data_name="add-del-layers",
                         static_data_template='{% include "wrtemplate_btn.html" %}')
-### WIND_RIVER_EXTENSION_END ###
 
+class LayerWRTemplatesTable(WRTemplatesTable):
+    """ Smaller version of the WRTemplates table for use in layer details """
+
+    def __init__(self, *args, **kwargs):
+        super(LayerWRTemplatesTable, self).__init__(*args, **kwargs)
+        self.default_orderby = "name"
+
+    def get_context_data(self, **kwargs):
+        context = super(LayerWRTemplatesTable, self).get_context_data(**kwargs)
+        context['layerversion'] = Layer_Version.objects.get(pk=kwargs['layerid'])
+        return context
+
+
+    def setup_queryset(self, *args, **kwargs):
+        self.queryset = \
+                WRTemplate.objects.filter(layer_version__pk=int(kwargs['layerid']))
+
+        self.queryset = self.queryset.order_by(self.default_orderby)
+        self.static_context_extra['in_prj'] = ProjectLayer.objects.filter(Q(project=kwargs['pid']) & Q(layercommit=kwargs['layerid'])).count()
+
+        prj = Project.objects.get(pk = kwargs['pid'])
+        self.static_context_extra['current_layers'] = \
+                self.project_layers = \
+                prj.get_project_layer_versions(pk=True)
+        self.static_context_extra['current_wrtemplates'] = \
+                self.project_wrtemplates = \
+                prj.get_project_wrtemplates(pk=True)
+
+    def setup_columns(self, *args, **kwargs):
+        self.add_column(title="Wind River Template",
+                        help_text="Information about a Wind River Template",
+                        hideable=False,
+                        orderable=True,
+                        field_name="name")
+
+        self.add_column(title="Description",
+                        field_name="description")
+
+        add_wrtemplate_template = '''
+        <a class="btn btn-default btn-block build-recipe-btn
+        {% if extra.in_prj == 0 %}disabled{% endif %}"
+        data-wrtemplate-name="{{data.name}}">Add WR Template</a>
+        '''
+
+        self.add_column(title="Select",
+                        help_text="Adds the selected template to the project",
+                        hideable=False,
+                        static_data_name="add-del-layers",
+                        static_data_template='{% include "wrtemplate_btn.html" %}')
+
+### WIND_RIVER_EXTENSION_END ###
 
 class DistrosTable(ToasterTable):
     """Table of Distros in Toaster"""

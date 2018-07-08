@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('project', models.ForeignKey(to='orm.Project')),
-                ('wrtemplate', models.ForeignKey(to='orm.WRTemplate')),
+                ('wrtemplate', models.ForeignKey(to='orm.WRTemplate', null=True)),
             ],
         ),
         migrations.CreateModel(
