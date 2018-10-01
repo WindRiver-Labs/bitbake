@@ -285,6 +285,8 @@ def fork_off_task(cfg, data, databuilder, workerdata, fn, task, taskname, taskha
                 os._exit(1)
             try:
                 if dry_run:
+                    localdata = bb.build._task_data(fn, taskname, the_data)
+                    bb.event.fire(bb.event.DryRun(), localdata)
                     return 0
                 try:
                     ret = bb.build.exec_task(fn, taskname, the_data, cfg.profile)
