@@ -111,7 +111,8 @@ class RestApiPlugin(layerindexlib.plugin.IndexPlugin):
                                    ("layerDependencies", layerindexlib.LayerDependency),
                                    ("recipes", layerindexlib.Recipe),
                                    ("machines", layerindexlib.Machine),
-                                   ("distros", layerindexlib.Distro)]:
+                                   ("distros", layerindexlib.Distro),
+                                   ("wrtemplates", layerindexlib.WRTemplate)]:
                 if lName in pindex:
                     index.add_raw_element(lName, lType, pindex[lName])
 
@@ -253,7 +254,8 @@ class RestApiPlugin(layerindexlib.plugin.IndexPlugin):
             for (lName, lType) in [("layerDependencies", layerindexlib.LayerDependency),
                                    ("recipes", layerindexlib.Recipe),
                                    ("machines", layerindexlib.Machine),
-                                   ("distros", layerindexlib.Distro)]:
+                                   ("distros", layerindexlib.Distro),
+                                   ("wrtemplates", layerindexlib.WRTemplate)]:
                 if lName not in load:
                     continue
                 logger.debug("Loading %s from %s" % (lName, index.apilinks[lName]))
