@@ -174,7 +174,7 @@ class LayerIndex():
         return res
 
 
-    def load_layerindex(self, indexURI, load=['layerDependencies', 'recipes', 'machines', 'distros'], reload=False):
+    def load_layerindex(self, indexURI, load=['layerDependencies', 'recipes', 'machines', 'distros', 'wrtemplates'], reload=False):
         '''Load the layerindex.
 
            indexURI - An index to load.  (Use multiple calls to load multiple indexes)
@@ -562,6 +562,20 @@ This function is used to implement debugging and provide the user info.
                                   '{:24}'.format(lix.distros[distro].name),
                                   '{:34}'.format(lix.distros[distro].description)[:34],
                                   '{:19}'.format(lix.distros[distro].layerbranch.layer.name)
+                                 ))
+                for line in sorted(output):
+                    logger.plain (line)
+
+                continue
+
+            if object == 'wrtemplates':
+                logger.plain ('%s %s %s' % ('{:24}'.format('wrtemplate'), '{:34}'.format('description'), '{:19}'.format('layer')))
+                logger.plain ('{:-^80}'.format(""))
+                for wrtemplate in lix.wrtemplates:
+                    output.append('%s %s %s' % (
+                                  '{:24}'.format(lix.wrtemplates[wrtemplate].name),
+                                  '{:34}'.format(lix.wrtemplates[wrtemplate].description)[:34],
+                                  '{:19}'.format(lix.wrtemplates[wrtemplate].layerbranch.layer.name)
                                  ))
                 for line in sorted(output):
                     logger.plain (line)
@@ -1338,6 +1352,19 @@ class Machine(LayerIndexItemObj_LayerBranch):
         self.updated = updated or datetime.datetime.today().isoformat()
 
 class Distro(LayerIndexItemObj_LayerBranch):
+    def define_data(self, id,
+                    name, description, layerbranch,
+                    updated=None):
+        self.id = id
+        self.name = name
+        self.description = description
+        if isinstance(layerbranch, LayerBranch):
+            self.layerbranch = layerbranch
+        else:
+            self.layerbranch_id = layerbranch
+        self.updated = updated or datetime.datetime.today().isoformat()
+
+class WRTemplate(LayerIndexItemObj_LayerBranch):
     def define_data(self, id,
                     name, description, layerbranch,
                     updated=None):

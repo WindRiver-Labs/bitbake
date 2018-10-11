@@ -331,4 +331,29 @@ class CookerPlugin(layerindexlib.plugin.IndexPlugin):
 
                                 index.add_element("distros", [distro])
 
+        # ("wrtemplates", layerindexlib.WRTEmplate)
+        wrtemplateId = 0
+        if 'wrtemplates' in load:
+            index.wrtemplates = {}
+
+            for layerBranchId in index.layerBranches:
+                # load_bblayers uses the description to cache the actual path...
+                wrtemplate_path = index.layerBranches[layerBranchId].layer.description
+                wrtemplate_path = os.path.join(wrtemplate_path, 'templates')
+                logger.plain('scanning for templates %s' % wrtemplate_path)
+                if os.path.isdir(wrtemplate_path):
+                    for (dirpath, _, filenames) in os.walk(wrtemplate_path):
+                        for fname in filenames:
+                            logger.plain('wrt d: %s' % fname)
+                            if fname in ['README', 'require', 'template.conf', 'image.inc', 'bsp-pkgs.conf', 'bsp-pkgs.inc']:
+                                wrtemplateId += 1
+                                wrtemplate = layerindexlib.WRTemplate(index, None)
+                                wrtemplate.define_data(id=wrtemplateId, name=dirpath[len(wrtemplate_path) + 1:],
+                                                    description=dirpath[len(wrtemplate_path) + 1:],
+                                                    layerbranch=index.layerBranches[layerBranchId])
+
+                                index.add_element("wrtemplates", [wrtemplate])
+                                # All the files in this path are connected to the same template!
+                                break
+
         return index
