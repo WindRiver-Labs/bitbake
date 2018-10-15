@@ -1,0 +1,32 @@
+<!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+<a class="btn btn-default btn-block wrtemplatebtn layer-exists-{{data.layer_version.id}} wrtemplate-add-{{data.id}}" data-wrtemplate='{ "id": {{data.id}}, "name":  "{{data.name}}"}' data-directive="add"
+    {% if data.layer_version.pk not in extra.current_layers %}
+    style="display:none;"
+    {% endif %}
+    {% if data.pk in extra.current_wrtemplates %}
+    style="display:none;"
+    {% endif %}
+>
+  Add template
+</a>
+<a class="btn btn-default btn-block wrtemplatebtn wrtemplate-remove-{{data.id}}" data-wrtemplate='{ "id": {{data.id}}, "name":  "{{data.name}}"}' data-directive="remove"
+    {% if data.layer_version.pk not in extra.current_layers %}
+    style="display:none;"
+    {% endif %}
+    {% if data.pk not in extra.current_wrtemplates %}
+    style="display:none;"
+    {% endif %}
+>
+  Remove template
+</a>
+<a class="btn btn-default btn-block layerbtn layer-add-{{data.layer_version.id}}" data-layer='{ "id": {{data.layer_version.id}}, "name":  "{{data.layer_version.layer.name}}", "layerdetailurl": "{%url 'layerdetails' extra.pid data.layer_version.id %}"}' data-directive="add"
+    {% if data.layer_version.pk in extra.current_layers %}
+    style="display:none;"
+    {% endif %}
+>
+  <span class="glyphicon glyphicon-plus"></span>
+  Add layer
+  <span class="glyphicon glyphicon-question-sign get-help" title="To select this template, you must first add the {{data.layer_version.layer.name}} layer to your project"></i>
+</a>
+<!-- ### WIND_RIVER_EXTENSION_END ### -->
+
