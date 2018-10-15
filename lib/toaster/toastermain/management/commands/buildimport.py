@@ -49,6 +49,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from orm.models import ProjectManager, Project, Release, ProjectVariable
 from orm.models import Layer, Layer_Version, LayerSource, ProjectLayer
 from toastergui.api import scan_layer_content
+### WIND_RIVER_EXTENSION_BEGIN ###
+from orm.models import WRTemplate,ProjectTemplate
+### WIND_RIVER_EXTENSION_END ###
 from django.db import OperationalError
 
 import os
@@ -217,6 +220,10 @@ class Command(BaseCommand):
 
     # Find the git version of the installation
     def find_layer_dir_version(self,path):
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        #  * WRLINUX_10_17_BASE  ...
+        #    remotes/m/master    -> base/wr-10.17-20180418
+        ### WIND_RIVER_EXTENSION_END ###
         #  * rocko               ...
 
         install_version = ''
@@ -268,6 +275,11 @@ class Command(BaseCommand):
                 break
         INSTALL_URL_PREFIX = INSTALL_URL_PREFIX.replace("/poky","/")
         INSTALL_VERSION_DIR = TOASTER_DIR
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        INSTALL_CLONE_PREFIX = TOASTER_DIR + "/layers/"
+        INSTALL_URL_PREFIX = INSTALL_URL_PREFIX.replace("/oe-core","/")
+        INSTALL_VERSION_DIR = TOASTER_DIR + "/wrlinux-x"
+        ### WIND_RIVER_EXTENSION_END ###
         INSTALL_URL_POSTFIX = INSTALL_URL_PREFIX.replace(':','_')
         INSTALL_URL_POSTFIX = INSTALL_URL_POSTFIX.replace('/','_')
         INSTALL_URL_POSTFIX = "%s_%s" % (TOASTER_CLONE_PREFIX,INSTALL_URL_POSTFIX)
@@ -481,6 +493,28 @@ class Command(BaseCommand):
                     release_name = 'None' if not pl.layercommit.release else pl.layercommit.release.name
                     print(" AFTER :ProjectLayer=%s,%s,%s,%s" % (pl.layercommit.layer.name,release_name,pl.layercommit.branch,pl.layercommit.commit))
 
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            for template in self.vars['WRTEMPLATE'].split(' '):
+                _log('Template import check:%s' % template)
+                if not template:
+                    continue
+                try:
+                    # Look at the wrtemplates registered with this project
+                    for t in WRTemplate.objects.filter(name=template):
+                        if not (t.layer_version.project.id == project.id):
+                            continue
+                        try:
+                            ProjectTemplate.objects.get(project = project,wrtemplate=t)
+                            _log('ProjectTemplate already has %s' % template)
+                        except:
+                            ProjectTemplate.objects.get_or_create(project = project,wrtemplate=t)
+                            _log('ProjectTemplate added %s' % template)
+                        break
+                    else:
+                        _log("WARNING:ProjectTemplate '%s' not found" % (template))
+                except Exception as e:
+                        _log("ERROR:ProjectTemplate '%s' not found %s" % (template,e))
+            ### WIND_RIVER_EXTENSION_END ###
 
     def handle(self, *args, **options):
         project_name = options['name']
@@ -566,8 +600,22 @@ class Command(BaseCommand):
             # preset the mode and default image recipe
             project.set_variable(Project.PROJECT_SPECIFIC_ISNEW,Project.PROJECT_SPECIFIC_NEW)
             project.set_variable(Project.PROJECT_SPECIFIC_DEFAULTIMAGE,"core-image-minimal")
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            project.set_variable(Project.PROJECT_SPECIFIC_DEFAULTIMAGE,"wrlinux-image-glibc-core")
+            ### WIND_RIVER_EXTENSION_END ###
+
             # Assert any extended/custom actions or variables for new non-Toaster projects
             if not len(self.toaster_vars):
+                ### WIND_RIVER_EXTENSION_BEGIN ###
+                # preset enabled network access for new projects (OOBE)
+                self.vars['BB_NO_NETWORK'] = '0'
+                self.update_project_vars(project,'BB_NO_NETWORK')
+                # auto-append BB_NO_NETWORK=0, in case user skips 'update' for new project
+                with open("%s/conf/local.conf" % project_path,'a') as f:
+                    f.write('%s\n' % TOASTER_PROLOG)
+                    f.write('BB_NO_NETWORK="0"\n')
+                    f.write('%s\n' % TOASTER_EPILOG)
+                ### WIND_RIVER_EXTENSION_END ###
                 pass
         else:
             project.set_variable(Project.PROJECT_SPECIFIC_ISNEW,Project.PROJECT_SPECIFIC_NONE)

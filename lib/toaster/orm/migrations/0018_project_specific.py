@@ -9,6 +9,12 @@ class Migration(migrations.Migration):
         ('orm', '0017_distro_clone'),
     ]
 
+    ### WIND_RIVER_EXTENSION_BEGIN ###
+    dependencies = [
+        ('orm', '0100_wrtemplates'),
+    ]
+    ### WIND_RIVER_EXTENSION_END ###
+
     operations = [
         migrations.AddField(
             model_name='Project',
