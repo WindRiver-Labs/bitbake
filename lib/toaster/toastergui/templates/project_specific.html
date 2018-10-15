@@ -158,5 +158,31 @@
       </ul>
   </div>
 
+    <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+    <!-- Wind River Templates -->
+    <div class="well well-transparent" id="wrtemplate-container">
+      <h3>Wind River Templates <span class="counter">(<span id="project-wrtemplates-count"></span>)</span>
+        <span title="Wind River organises advanced feature combinations into thematic groups called <strong>Wind River Templates</strong>." class="glyphicon glyphicon-question-sign get-help"></span>
+      </h3>
+
+      <div class="alert alert-warning" id="no-wrtemplates-in-project" style="display:none">
+        <h4>This project has no templates</h4>
+      </div>
+
+      <form class="form-inline">
+        <div class="form-group">
+          <input id="wrtemplate-add-input" class="form-control" autocomplete="off" placeholder="Type a template name" data-minlength="1" data-autocomplete="off" data-provide="typeahead" data-source="" type="text">
+        </div>
+        <button id="add-wrtemplate-btn" class="btn btn-default" disabled>Add Template</button>
+        <p class="form-link">
+          <a href="{% url 'projectwrtemplates' project.id %}" id="view-compatible-wrtemplates">View compatible Wind River templates</a>
+        </p>
+      </form>
+
+      <ul class="list-unstyled lead" id="wrtemplates-in-project-list">
+      </ul>
+    </div>
+    <!-- ### WIND_RIVER_EXTENSION_END ### -->
+
 </div>
 {% endblock %}

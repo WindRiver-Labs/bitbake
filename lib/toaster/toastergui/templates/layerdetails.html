@@ -128,6 +128,11 @@
           <li>
             <a data-toggle="tab" href="#machines" class="text-muted" id="machines-tab">Machines (<span class="table-count-machinestable"></span>)</a>
           </li>
+          <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+          <li>
+            <a data-toggle="tab" href="#wrtemplates" class="text-muted" id="wrtemplates-tab">WR Templates (<span class="table-count-wrtemplatestable"></span>)</a>
+          </li>
+          <!-- ### WIND_RIVER_EXTENSION_END ### -->
         </ul>
         <div class="tab-content">
 
@@ -310,6 +315,24 @@
             {% endwith %}
             {% endwith %}
           </div>
+
+          <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+          <div id="wrtemplates" class="tab-pane">
+
+            <div id="no-wrtemplates-yet" class="alert alert-info" style="display:none">
+              <p>Toaster does not have WR Template information for the <strong> {{layerversion.layer.name}} </strong> layer.</p>
+              <p>Sadly, WR Templates cannot be obtained from builds, so this page will remain empty.</p>
+            </div>
+
+            <!-- WR Templates table -->
+            {% url 'layerwrtemplatestable' project.id layerversion.id  as xhr_table_url %}
+            {% with "wrtemplatestable" as table_name  %}
+            {% with "WR Templates" as title  %}
+            {% include 'toastertable-simple.html' %}
+            {% endwith %}
+            {% endwith %}
+          </div>
+          <!-- ### WIND_RIVER_EXTENSION_END ### -->
 
         </div> <!-- end tab content -->
       </div> <!-- end tabable -->
