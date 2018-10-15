@@ -32,6 +32,10 @@ from toastergui.templatetags.projecttags import filtered_filesizeformat
 from django.utils import timezone
 import pytz
 
+### WIND_RIVER_EXTENSION_BEGIN ###
+from orm.models import ProjectTemplate, WRTemplate
+### WIND_RIVER_EXTENSION_END ###
+
 # development/debugging support
 verbose = 2
 def _log(msg):
@@ -261,6 +265,27 @@ def scan_layer_content(layer,layer_version):
                             ro.description = ro.summary
                         ro.save()
 
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            # templates/feature/*
+            cmd = '%s %s' % ('ls -d', os.path.join(layer.local_source_dir,'templates/feature/*'))
+            templates_list = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,stderr=subprocess.STDOUT).stdout.read()
+            templates_list = templates_list.decode("utf-8").strip()
+            _log("Scan_layer_content: Template check:%s,%s" % (layer.local_source_dir,templates_list))
+            if templates_list and 'No such' not in templates_list:
+                for template_name in templates_list.split('\n'):
+                    template_name = template_name[template_name.rfind('/')+1:]
+                    if template_name:
+                        template_name = 'feature/'+template_name
+                        _log("Scan_layer_content: Add Template check:%s" % (template_name))
+                        to, created = WRTemplate.objects.get_or_create(
+                            layer_version=layer_version,
+                            name=template_name,
+                            up_date=timezone.now(),
+                        )
+                        if created:
+                            to.description = 'Template %s from layer %s' % (template_name,layer.name)
+                        to.save()
+            ### WIND_RIVER_EXTENSION_END ###
         except Exception as e:
             logger.warning("ERROR:scan_layer_content: %s" % e)
 
@@ -999,6 +1024,10 @@ class XhrProject(View):
           Args:
               layerAdd = layer_version_id layer_version_id ...
               layerDel = layer_version_id layer_version_id ...
+              ### WIND_RIVER_EXTENSION_BEGIN ###
+              wrtemplateAdd = wrtemplate_id
+              wrtemplateDel = wrtemplate_id
+              ### WIND_RIVER_EXTENSION_END ###
               projectName = new_project_name
               machineName = new_machine_name
 
@@ -1029,6 +1058,26 @@ class XhrProject(View):
             ProjectLayer.objects.filter(
                 project=prj,
                 layercommit_id__in=layer_version_ids).delete()
+
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        # Add wrtemplates
+        if 'wrtemplateAdd' in request.POST and len(request.POST['wrtemplateAdd']) > 0:
+            for wrtemplate_id in request.POST['wrtemplateAdd'].split(','):
+                try:
+                    t = WRTemplate.objects.get(pk=int(wrtemplate_id))
+                    ProjectTemplate.objects.get_or_create(project=prj,
+                                                       wrtemplate=t)
+                except WRTemplate.DoesNotExist:
+                    return error_response("Wind River Template %s asked to add "
+                                          "doesn't exist" % wrtemplate_id)
+
+        # Remove wrtemplates
+        if 'wrtemplateDel' in request.POST and len(request.POST['wrtemplateDel']) > 0:
+            wrtemplate_ids = request.POST['wrtemplateDel'].split(',')
+            ProjectTemplate.objects.filter(
+                project=prj,
+                wrtemplate_id__in=wrtemplate_ids).delete()
+        ### WIND_RIVER_EXTENSION_END ###
 
         # Project name change
         if 'projectName' in request.POST:
@@ -1113,9 +1162,27 @@ class XhrProject(View):
                 "layersource": layer.layercommit.layer_source
             })
 
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        wrtObjs = []
+        for projecttemplate in project.projecttemplate_set.all():
+            wrtObjs.append({
+                "id": projecttemplate.wrtemplate.pk,
+                "name": projecttemplate.wrtemplate.name,
+                "description": projecttemplate.wrtemplate.description,
+
+                "vcs_url": projecttemplate.wrtemplate.layer_version.layer.vcs_url,
+                "local_source_dir": str(projecttemplate.wrtemplate.layer_version.layer.local_source_dir),
+                # XXX
+                "wrtemplatedetailurl": "XXX"
+            })
+        ### WIND_RIVER_EXTENSION_END ###
+
         data = {
             "name": project.name,
             "layers": layers,
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            "wrtemplates": wrtObjs,
+            ### WIND_RIVER_EXTENSION_END ###
             "freqtargets": freqtargets,
         }
 

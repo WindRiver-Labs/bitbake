@@ -30,4 +30,10 @@
     <field type="CharField" name="name">DEFCONF_DL_DIR</field>
     <field type="CharField" name="value">${TOPDIR}/../downloads</field>
   </object>
+  <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+  <object model="orm.toastersetting" pk="99">
+    <field type="CharField" name="name">CUSTOM_XML_ONLY</field>
+    <field type="CharField" name="value">True</field>
+  </object>
+  <!-- ### WIND_RIVER_EXTENSION_END ### -->
 </django-objects>

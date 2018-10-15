@@ -55,6 +55,9 @@
         layersTypeAheadUrl: {% url 'xhr_layerstypeahead' project.id as paturl%}{{paturl|json}},
         machinesTypeAheadUrl: {% url 'xhr_machinestypeahead' project.id as paturl%}{{paturl|json}},
         distrosTypeAheadUrl: {% url 'xhr_distrostypeahead' project.id as paturl%}{{paturl|json}},
+        /* ### WIND_RIVER_EXTENSION_BEGIN ### */
+        wrtemplatesTypeAheadUrl: {% url 'xhr_wrtemplatestypeahead' project.id as paturl%}{{paturl|json}},
+        /* ### WIND_RIVER_EXTENSION_END ### */
         projectBuildsUrl: {% url 'projectbuilds' project.id as pburl %}{{pburl|json}},
         xhrCustomRecipeUrl : "{% url 'xhr_customrecipe' %}",
         projectId : {{project.id}},
@@ -98,10 +101,16 @@
           </button>
           <div class="toaster-navbar-brand">
           	{% if project_specific %}
+              <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+              <img class="logo" src="{% static 'img/wr_logo.png' %}" class="" alt="Wind River logo"/>
+              <!-- ### WIND_RIVER_EXTENSION_END ### -->
               <img class="logo" src="{% static 'img/logo.png' %}" class="" alt="Yocto Project logo"/>
               Toaster
           	{% else %}
             <a href="/">
+              <!-- ### WIND_RIVER_EXTENSION_BEGIN ### -->
+              <img class="logo" src="{% static 'img/wr_logo.png' %}" class="" alt="Wind River logo"/>
+              <!-- ### WIND_RIVER_EXTENSION_END ### -->
             </a>
             <a href="/">
               <img class="logo" src="{% static 'img/logo.png' %}" class="" alt="Yocto Project logo"/>
