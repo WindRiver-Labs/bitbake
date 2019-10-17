@@ -2750,7 +2750,7 @@ def update_scenequeue_data(tids, sqdata, rqdata, rq, cooker, stampcache, sqrq):
                 sqdata.hashes[h] = tid
             else:
                 sqrq.sq_deferred[tid] = sqdata.hashes[h]
-                bb.warn("Deferring %s after %s" % (tid, sqdata.hashes[h]))
+                bb.note("Deferring %s after %s" % (tid, sqdata.hashes[h]))
 
 
 class TaskFailure(Exception):
