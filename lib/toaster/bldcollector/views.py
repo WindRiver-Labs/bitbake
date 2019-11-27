@@ -7,7 +7,7 @@
 #
 
 from django.views.decorators.cache import cache_control
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponseBadRequest, HttpResponse
 from django.utils import timezone

@@ -19,23 +19,23 @@ class Migration(migrations.Migration):
                 ('up_date', models.DateTimeField(default=None, null=True)),
                 ('name', models.CharField(max_length=255)),
                 ('description', models.CharField(max_length=255)),
-                ('layer_version', models.ForeignKey(to='orm.Layer_Version')),
+                ('layer_version', models.ForeignKey(to='orm.Layer_Version', on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
             name='ProjectTemplate',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('project', models.ForeignKey(to='orm.Project')),
-                ('wrtemplate', models.ForeignKey(to='orm.WRTemplate', null=True)),
+                ('project', models.ForeignKey(to='orm.Project', on_delete=models.CASCADE)),
+                ('wrtemplate', models.ForeignKey(to='orm.WRTemplate', null=True, on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
             name='BuildTemplate',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('build', models.ForeignKey(related_name='wrtemplate_build', default=None, to='orm.Build', null=True)),
-                ('wrtemplate', models.ForeignKey(to='orm.WRTemplate')),
+                ('build', models.ForeignKey(related_name='wrtemplate_build', default=None, to='orm.Build', null=True, on_delete=models.CASCADE)),
+                ('wrtemplate', models.ForeignKey(to='orm.WRTemplate', on_delete=models.CASCADE)),
             ],
         ),
     ]
