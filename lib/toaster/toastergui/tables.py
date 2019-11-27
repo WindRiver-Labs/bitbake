@@ -16,7 +16,7 @@ from orm.models import WRTemplate
 ### WIND_RIVER_EXTENSION_END ###
 from django.db.models import Q, Max, Sum, Count, When, Case, Value, IntegerField
 from django.conf.urls import url
-from django.core.urlresolvers import reverse, resolve
+from django.urls import reverse, resolve
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 
