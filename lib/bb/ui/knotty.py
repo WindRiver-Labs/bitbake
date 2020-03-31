@@ -109,24 +109,36 @@ def pluralise(singular, plural, qty):
     else:
         return plural % qty
 
+# Interactive logging selection singleton
 class RtLogLevel:
-    def __init__(self, mlt):
-        self.displaytail = False
-        self.mlt = mlt
+    instance = None
+    def __init__(self, mlt = None):
+        if not RtLogLevel.instance:
+            RtLogLevel.instance = RtLogLevel.__RtLogLevel(mlt)
+        elif mlt is not None:
+            RtLogLevel.instance.mlt = mlt
+    def __getattr__(self, name):
+        return getattr(self.instance, name)
 
-    def displayLogs(self):
-        if self.displaytail:
-            self.mlt.displayLogs()
-
-    def setLevel(self, input, verbose):
-        if input == "1":
-            if verbose:
-                print("NOTE: Turning off real time log tail")
+    # The actual class implementation
+    class __RtLogLevel:
+        def __init__(self, mlt):
             self.displaytail = False
-        elif input == "2":
-            if verbose:
-                print("NOTE: Turning on real time log tail")
-            self.displaytail = True
+            self.mlt = mlt
+
+        def displayLogs(self):
+            if self.displaytail:
+                self.mlt.displayLogs()
+
+        def setLevel(self, input, verbose):
+            if input == "1":
+                if verbose:
+                    print("NOTE: Turning off real time log tail")
+                self.displaytail = False
+            elif input == "2":
+                if verbose:
+                    print("NOTE: Turning on real time log tail")
+                self.displaytail = True
 
 class InteractConsoleLogFilter(logging.Filter):
     def __init__(self, tf):
@@ -643,10 +655,11 @@ def main(server, eventHandler, params, tf = TerminalFilter):
     termfilter = tf(main, helper, console_handlers, params.options.quiet)
     atexit.register(termfilter.finish)
 
-    rtloglevel = RtLogLevel(mlt)
+    # Initialize the RtLogLevel singleton
+    RtLogLevel(mlt)
     bb_rt_loglevel, error = server.runCommand(["getVariable", "BB_RT_LOGLEVEL"])
     if bb_rt_loglevel and bb_rt_loglevel != "":
-        rtloglevel.setLevel(bb_rt_loglevel, False)
+        RtLogLevel().setLevel(bb_rt_loglevel, False)
 
     while True:
         try:
@@ -662,17 +675,17 @@ def main(server, eventHandler, params, tf = TerminalFilter):
                 event = eventHandler.waitEvent(0.25)
                 if termfilter.poll():
                     keyinput = sys.stdin.read(1)
-                    rtloglevel.setLevel(keyinput, True)
+                    RtLogLevel().setLevel(keyinput, True)
                     termfilter.updateFooterForce()
                 # Always try printing any accumulated log files first
-                rtloglevel.displayLogs()
+                RtLogLevel().displayLogs()
                 if event is None:
                     continue
             helper.eventHandler(event)
 
             if isinstance(event, bb.build.TaskStarted):
                 mlt.openLog(event.logfile, event.pid)
-                rtloglevel.displayLogs()
+                RtLogLevel().displayLogs()
 
             if isinstance(event, bb.build.TaskSucceeded):
                 mlt.closeLogPid(event.pid)
