@@ -124,6 +124,8 @@ class RtLogLevel:
     class __RtLogLevel:
         def __init__(self, mlt):
             self.displaytail = False
+            self.displayprogress = True
+            self.strictfilter = True
             self.mlt = mlt
 
         def displayLogs(self):
@@ -131,21 +133,50 @@ class RtLogLevel:
                 self.mlt.displayLogs()
 
         def setLevel(self, input, verbose):
-            if input == "1":
+            if input == "0":
                 if verbose:
-                    print("NOTE: Turning off real time log tail")
+                    print("NOTE: Using \"top\" logging")
                 self.displaytail = False
+                self.displayprogress = True
+                self.strictfilter = True
+            elif input == "1":
+                if verbose:
+                    print("NOTE: Using linear logging")
+                self.displaytail = False
+                self.displayprogress = False
+                self.strictfilter = False
             elif input == "2":
                 if verbose:
-                    print("NOTE: Turning on real time log tail")
-                self.displaytail = True
+                    print("NOTE: Using split (linear + \"top\") logging")
+                self.displaytail = False
+                self.displayprogress = True
+                self.strictfilter = False
+            elif input == "r":
+                if self.displaytail:
+                    if verbose:
+                        print("NOTE: Turning off real time log tail")
+                    self.displaytail = False
+                else:
+                    if verbose:
+                        print("NOTE: Turning on real time log tail")
+                    self.displaytail = True
+            elif input == "h" or input == "?":
+                print("")
+                print("=============================================")
+                print("Interactive logging keys:")
+                print(" 0 - \"top\" logging (turns off all enhanced logging)")
+                print(" 1 - Linear logging (tuns off all enhanced logging)")
+                print(" 2 - Split (linear + \"top\") logging (turns off all enhanced logging)")
+                print(" r - Toggle use of real time log tail")
+                print(" h - display commands")
+                print("")
 
 class InteractConsoleLogFilter(logging.Filter):
     def __init__(self, tf):
         self.tf = tf
 
     def filter(self, record):
-        if record.levelno == bb.msg.BBLogFormatter.NOTE and (record.msg.startswith("Running") or record.msg.startswith("recipe ")):
+        if RtLogLevel().strictfilter and record.levelno == bb.msg.BBLogFormatter.NOTE and (record.msg.startswith("Running") or record.msg.startswith("recipe ")):
             return False
         self.tf.clearFooter()
         return True
@@ -276,7 +307,7 @@ class TerminalFilter(object):
         self.updateFooter()
 
     def updateFooter(self):
-        if not self.cuu:
+        if not self.cuu or not RtLogLevel().displayprogress:
             return
         activetasks = self.helper.running_tasks
         failedtasks = self.helper.failed_tasks
@@ -413,7 +444,11 @@ def _log_settings_from_server(server, observe_only):
     if error:
         logger.error("Unable to get the value of BB_LOGCONFIG variable: %s" % error)
         raise BaseException(error)
-    return includelogs, loglines, consolelogfile, logconfigfile
+    bb_rt_loglevel, error = server.runCommand(["getVariable", "BB_RT_LOGLEVEL"])
+    if error:
+        logger.error("Unable to get the value of BB_RT_LOGLEVEL variable: %s" % error)
+        raise BaseException(error)
+    return includelogs, loglines, consolelogfile, logconfigfile, bb_rt_loglevel
 
 _evt_list = [ "bb.runqueue.runQueueExitWait", "bb.event.LogExecTTY", "logging.LogRecord",
               "bb.build.TaskFailed", "bb.build.TaskBase", "bb.event.ParseStarted",
@@ -440,8 +475,7 @@ def main(server, eventHandler, params, tf = TerminalFilter):
         if not params.observe_only:
             params.updateToServer(server, os.environ.copy())
 
-        includelogs, loglines, consolelogfile, logconfigfile = _log_settings_from_server(server, params.observe_only)
-
+        includelogs, loglines, consolelogfile, logconfigfile, bb_rt_loglevel = _log_settings_from_server(server, params.observe_only)
         loglevel, _ = bb.msg.constructLogOptions()
     except bb.BBHandledException:
         drain_events_errorhandling(eventHandler)
@@ -658,7 +692,8 @@ def main(server, eventHandler, params, tf = TerminalFilter):
     # Initialize the RtLogLevel singleton
     RtLogLevel(mlt)
     if bb_rt_loglevel and bb_rt_loglevel != "":
-        RtLogLevel().setLevel(bb_rt_loglevel, False)
+        for inputkey in bb_rt_loglevel:
+            RtLogLevel().setLevel(inputkey, False)
 
     while True:
         try:
