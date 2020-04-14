@@ -657,7 +657,6 @@ def main(server, eventHandler, params, tf = TerminalFilter):
 
     # Initialize the RtLogLevel singleton
     RtLogLevel(mlt)
-    bb_rt_loglevel, error = server.runCommand(["getVariable", "BB_RT_LOGLEVEL"])
     if bb_rt_loglevel and bb_rt_loglevel != "":
         RtLogLevel().setLevel(bb_rt_loglevel, False)
 
