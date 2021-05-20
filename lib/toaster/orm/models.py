@@ -133,6 +133,13 @@ class ProjectManager(models.Manager):
             pv.value = defaultconf.value
             pv.save()
 
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        # For new LTS Toaster projects OOBE, always preset BB_NO_NETWORK off
+        pv,create = ProjectVariable.objects.get_or_create(project=prj,name='BB_NO_NETWORK')
+        pv.value = '0'
+        pv.save()
+        ### WIND_RIVER_EXTENSION_END ###
+
         if release is None:
             return prj
 
@@ -344,6 +351,33 @@ class Project(models.Model):
 
         return queryset
 
+    ### WIND_RIVER_EXTENSION_BEGIN ###
+    def get_all_compatible_wrtemplates(self):
+        """ Returns QuerySet of all the compatible Wind River templates available to the
+        project including ones from Layers not currently added """
+#        queryset = WRTemplate.objects.filter(
+#            layer_version__in=self.get_all_compatible_layer_versions())
+        queryset = WRTemplate.objects.all()
+        return queryset
+
+    def get_available_wrtemplates(self):
+        """ Returns QuerySet of all the compatible Wind River templates available to the
+        project from the currently layer set """
+        queryset = WRTemplate.objects.filter(
+            layer_version__in=self.get_project_layer_versions())
+        return queryset
+
+    def get_project_wrtemplates(self, pk=False):
+        """ Returns the WRTemplate's currently added to this project """
+        wrtemplates = self.projecttemplate_set.all().values_list('wrtemplate',
+                                                                 flat=True)
+
+        if pk is False:
+            return ProjectTemplate.objects.filter(pk__in=wrtemplates)
+        else:
+            return wrtemplates
+    ### WIND_RIVER_EXTENSION_END ###
+
     def get_available_recipes(self):
         """ Returns QuerySet of all the recipes that are provided by layers
         added to this project """
@@ -437,6 +471,13 @@ class Project(models.Model):
 
             for v in self.projectvariable_set.all():
                 BRVariable.objects.create(req=br, name=v.name, value=v.value)
+
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            wr_template_list=[]
+            for t in self.projecttemplate_set.all():
+                wr_template_list.append(t.wrtemplate.name)
+            BRVariable.objects.get_or_create(req = br, name = "WRTEMPLATE", value = ' '.join(wr_template_list))
+            ### WIND_RIVER_EXTENSION_END ###
 
             try:
                 br.build.machine = self.projectvariable_set.get(
@@ -1854,6 +1895,38 @@ def signal_runbuilds():
             os.kill(int(pidf.read()), SIGUSR1)
     except FileNotFoundError:
         logger.info("Stopping existing runbuilds: no current process found")
+
+### WIND_RIVER_EXTENSION_BEGIN ###
+class WRTemplate(models.Model):
+    search_allowed_fields = ["name", "description", "layer_version__layer__name"]
+    up_date = models.DateTimeField(null = True, default = None)
+
+    layer_version = models.ForeignKey('Layer_Version', on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
+
+    def get_vcs_wrtemplate_file_link_url(self):
+        path = self.name+'/template.conf'
+        return self.layer_version.get_vcs_file_link_url(path)
+
+    def __unicode__(self):
+        return "WRTemplate " + self.name + "(" + self.description + ")"
+
+class ProjectTemplate(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    wrtemplate = models.ForeignKey(WRTemplate, on_delete=models.CASCADE, null=True)
+
+    def __unicode__(self):
+        return "%s, %s" % (self.project.name, self.wrtemplate)
+
+class BuildTemplate(models.Model):
+    build = models.ForeignKey(Build, on_delete=models.CASCADE, related_name='wrtemplate_build',
+                              default=None, null=True)
+    wrtemplate = models.ForeignKey(WRTemplate, on_delete=models.CASCADE, null=True)
+
+    def __unicode__(self):
+        return "%s, %s" % (self.build.name, self.wrtemplate)
+### WIND_RIVER_EXTENSION_END ###
 
 class Distro(models.Model):
     search_allowed_fields = ["name", "description", "layer_version__layer__name"]

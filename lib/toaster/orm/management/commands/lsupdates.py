@@ -12,9 +12,14 @@ from orm.models import Layer, Release, Layer_Version
 from orm.models import LayerVersionDependency, Machine, Recipe
 from orm.models import Distro
 from orm.models import ToasterSetting
+from orm.models import LayerSource, ReleaseDefaultLayer
+### WIND_RIVER_EXTENSION_BEGIN ###
+from orm.models import WRTemplate
+### WIND_RIVER_EXTENSION_END ###
 
 import os
 import sys
+import re
 
 import logging
 import threading
@@ -105,6 +110,9 @@ class Command(BaseCommand):
             url_branches = ";branch=%s" % ','.join(whitelist_branch_names)
         else:
             url_branches = ""
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        url_branches = ""
+        ### WIND_RIVER_EXTENSION_END ###
         layerindex.load_layerindex("%s%s" % (self.apiurl, url_branches))
 
         http_progress.stop()
@@ -194,6 +202,12 @@ class Command(BaseCommand):
 
         dependlist = {}
         for id in index.layerDependencies:
+            ### WIND_RIVER_EXTENSION_BEGIN ###
+            # SKIP OPTIONAL DEPENDS FOR NOW
+            if not index.layerDependencies[id].required:
+                continue
+            ### WIND_RIVER_EXTENSION_END ###
+
             try:
                 lv = Layer_Version.objects.get(
                     pk=li_layer_branch_id_to_toaster_lv_id[index.layerDependencies[id].layerbranch_id])
@@ -221,6 +235,23 @@ class Command(BaseCommand):
                 LayerVersionDependency.objects.get_or_create(layer_version=lv,
                                                              depends_on=lvd)
             self.mini_progress("Layer version dependencies", i, total)
+
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        # update Wind River Templates
+        logger.info("Processing wrtemplate information")
+
+        total = len(index.wrtemplates)
+        for i, id in enumerate(index.wrtemplates):
+            wrtemplate, created = WRTemplate.objects.get_or_create(
+                name=index.wrtemplates[id].name,
+                layer_version=Layer_Version.objects.get(
+                    pk=li_layer_branch_id_to_toaster_lv_id[index.wrtemplates[id].layerbranch_id]))
+            wrtemplate.up_date = index.wrtemplates[id].updated
+            wrtemplate.name = index.wrtemplates[id].name
+            wrtemplate.description = index.wrtemplates[id].description
+            wrtemplate.save()
+            self.mini_progress("wrtemplates", i, total)
+        ### WIND_RIVER_EXTENSION_END ###
 
         # update Distros
         logger.info("Processing distro information")
@@ -278,11 +309,38 @@ class Command(BaseCommand):
                 ro.bugtracker = index.recipes[id].bugtracker
                 ro.file_path = index.recipes[id].fullpath
                 ro.is_image = 'image' in index.recipes[id].inherits.split()
+                ### WIND_RIVER_EXTENSION_BEGIN ###
+                if not index.recipes[id].inherits and ro.file_path.endswith('/images'):
+                    # workaround for Wind River image recipes (empty inherits)
+                    ro.is_image = True
+                ### WIND_RIVER_EXTENSION_END ###
                 ro.save()
             except Exception as e:
                 logger.warning("Failed saving recipe %s", e)
 
             self.mini_progress("recipes", i, total)
+
+        ### WIND_RIVER_EXTENSION_BEGIN ###
+        # Insure that "layers/local" is in "releasedefaultlayer"
+        # CUSTOM_LAYERINDEX_SERVER=file:///$INSTALLDIR/config/index-cache/layers_wrs_com.json
+        primary_release = Release.objects.get(id=1)
+        layer,created = Layer.objects.get_or_create(name='local')
+        if created:
+            layer.local_source_dir = ToasterSetting.objects.get(name = 'CUSTOM_LAYERINDEX_SERVER').value
+            layer.local_source_dir = re.sub('file://', '', layer.local_source_dir)
+            layer.local_source_dir = re.sub('config/index-cache/.*', 'layers/local', layer.local_source_dir)
+            layer.save()
+            layer_version = Layer_Version.objects.create(
+                layer=layer,
+                project=None,
+                layer_source=LayerSource.TYPE_LOCAL,
+                release=primary_release,
+                )
+            layer_version.save()
+        releasedefaultlayer,created = ReleaseDefaultLayer.objects.get_or_create(layer_name='local',release=primary_release)
+        if created:
+            releasedefaultlayer.save()
+        ### WIND_RIVER_EXTENSION_END ###
 
         os.system('setterm -cursor on')
 
