@@ -70,6 +70,7 @@ class SSH(FetchMethod):
                 "git:// prefix with protocol=ssh", urldata.url)
         m = __pattern__.match(urldata.url)
         path = m.group('path')
+        path = path.replace("%3A", ":").replace("%2B", "+")
         host = m.group('host')
         urldata.localpath = os.path.join(d.getVar('DL_DIR'),
                 os.path.basename(os.path.normpath(path)))
@@ -99,7 +100,7 @@ class SSH(FetchMethod):
 
         if path[0] != '~':
             path = '/%s' % path
-        path = path.replace("%3A", ":")
+        path = path.replace("%3A", ":").replace("%2B", "+")
 
         fr += ':%s' % path
 
@@ -139,7 +140,7 @@ class SSH(FetchMethod):
 
         if path[0] != '~':
             path = '/%s' % path
-        path = path.replace("%3A", ":")
+        path = path.replace("%3A", ":").replace("%2B", "+")
 
         cmd = 'ssh -o BatchMode=true %s %s [ -f %s ]' % (
             portarg,
